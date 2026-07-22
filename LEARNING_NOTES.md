@@ -74,5 +74,43 @@ each call). I switched to reading the raw CSV once with pandas and grouping by
 the time-step column: same numbers, deterministic, seconds not minutes. Lesson:
 prefer the cheapest source of truth for repeated reads.
 
-<!-- Step 2+ notes appended here: baselines (LogReg/XGBoost + autoencoder),
-message passing, GCN/SAGE/GAT, over-smoothing, heterogeneous/temporal graphs. -->
+## Step 2 - Non-graph baselines (the honest reference)
+
+**Concept.** Before any GNN, fit models that see only the 165 node features and
+*not* the graph. If a GNN later beats these, the gain is attributable to the
+graph. Three baselines, three philosophies: logistic regression (linear floor),
+XGBoost (the strong tabular bar), and an unsupervised autoencoder (the USAD
+instinct: train on normal, score by reconstruction error).
+
+**Protocol (defensible).** Scaler fit on **train only** (no leakage); the built-in
+**temporal** split; F1 threshold chosen on **train** then applied to test; PR-AUC
+primary.
+
+**Real results (temporal test):**
+| model | PR-AUC | ROC-AUC | F1 |
+|---|---|---|---|
+| logreg | 0.288 | 0.881 | 0.351 |
+| xgboost | **0.799** | 0.928 | **0.817** |
+| autoencoder | 0.038 | 0.213 | 0.122 |
+
+**What I must be able to explain:**
+- **PR-AUC vs ROC-AUC, live:** XGBoost's ROC-AUC (0.93) flatters vs its PR-AUC
+  (0.80). ROC's FPR has a giant TN denominator, so false positives barely move it;
+  PR-AUC's precision compares FP against the rare TP, so it "feels" them. In heavy
+  imbalance, report PR-AUC.
+- **Why the autoencoder is worse than random (ROC 0.21).** It learns "normal" from
+  early-time-step licit nodes, but the licit distribution *shifts* after the
+  dark-market shutdown. At test time, test-period licit reconstruct worse than
+  illicit, so high reconstruction error no longer means "illicit". This is a
+  genuine failure of the stationarity assumption behind reconstruction-based
+  anomaly detection - and a clean motivation for structure (graph) and explicit
+  temporal handling. I do **not** invert the score using test knowledge; the
+  principled "anomaly = high error" model is what is reported.
+- **The USAD link, precisely.** USAD worked because (a) time series are (locally)
+  stationary and (b) an adversarial second decoder sharpened the boundary. Here
+  (a) is violated by the temporal shift, and I used only the plain AE (no
+  adversarial part). So the baseline is honest about what carries over and what
+  does not.
+
+<!-- Step 3+ notes appended here: message passing, GCN/SAGE/GAT, over-smoothing,
+heterogeneous/temporal graphs. -->

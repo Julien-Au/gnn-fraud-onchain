@@ -28,7 +28,7 @@ imbalance (PR-AUC, minority-class F1).
 |------|------|--------|
 | 0 | Scaffolding, green-gate, CI, agent playbook | done |
 | 1 | Ingestion + graph EDA (Elliptic via PyTorch Geometric) | done |
-| 2 | Baselines: LogReg / XGBoost + an unsupervised autoencoder (USAD nod) | todo |
+| 2 | Baselines: LogReg / XGBoost + an unsupervised autoencoder (USAD nod) | done |
 | 3 | GNNs: GCN -> GraphSAGE -> GAT, plus a temporal variant | todo |
 | 4 | Heterogeneous graph (Elliptic++) + relational-foundation-model framing | todo |
 | 5 | Rigorous evaluation, experiment tracking, demo (CLI / Streamlit) | todo |
@@ -61,6 +61,34 @@ Measured with `uv run --extra gnn gnn-fraud eda` on the PyG Elliptic build
 The temporal panel shows the built-in train/test boundary and the sharp drop in
 illicit activity after a dark-market shutdown (~step 43) - exactly the kind of
 distribution shift a temporal split must respect and a random split would hide.
+
+## Results so far (step 2 baselines)
+
+Non-graph reference on node features, evaluated on the **temporal** test split
+(reproduce with `uv run --extra gnn --extra boost gnn-fraud baselines`; raw
+numbers in [`docs/results/baselines.json`](docs/results/baselines.json)):
+
+| Model | PR-AUC | ROC-AUC | F1 (illicit) | Precision | Recall |
+|---|---|---|---|---|---|
+| Logistic regression | 0.288 | 0.881 | 0.351 | 0.235 | 0.693 |
+| **XGBoost** | **0.799** | 0.928 | **0.817** | 0.990 | 0.695 |
+| Autoencoder (USAD-style) | 0.038 | 0.213 | 0.122 | 0.065 | 1.000 |
+
+![baselines](docs/media/results/baselines.png)
+
+Reading these honestly:
+- **XGBoost is the bar to beat** (PR-AUC 0.80). Note PR-AUC 0.80 vs ROC-AUC 0.93
+  for the same model - ROC always looks rosier under imbalance, which is why
+  PR-AUC is the primary metric here.
+- **The unsupervised autoencoder fails (ROC-AUC 0.21, below random).** Trained on
+  licit-only train nodes, it does *not* separate illicit at test time - illicit
+  nodes actually reconstruct *better* than test-period licit ones. The most
+  likely cause is **temporal distribution shift** (the licit "normal" learned on
+  early time steps drifts after the dark-market shutdown), so feature-space
+  reconstruction error stops tracking illicitness. This negative result is
+  reported as-is; it is exactly the motivation for adding graph structure and
+  temporal modeling (steps 3-4). A USAD-style adversarial refinement is a noted
+  future variant, not a claim.
 
 ## Quickstart
 

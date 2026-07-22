@@ -1,0 +1,38 @@
+{
+  "logreg": {
+    "pr_auc": 0.2879,
+    "roc_auc": 0.8812,
+    "f1": 0.3513,
+    "precision": 0.2353,
+    "recall": 0.6934,
+    "threshold": 0.8293,
+    "tp": 751,
+    "fp": 2441,
+    "fn": 332,
+    "tn": 13146
+  },
+  "xgboost": {
+    "pr_auc": 0.7991,
+    "roc_auc": 0.9277,
+    "f1": 0.8167,
+    "precision": 0.9895,
+    "recall": 0.6953,
+    "threshold": 0.9766,
+    "tp": 753,
+    "fp": 8,
+    "fn": 330,
+    "tn": 15579
+  },
+  "autoencoder": {
+    "pr_auc": 0.0382,
+    "roc_auc": 0.2128,
+    "f1": 0.122,
+    "precision": 0.065,
+    "recall": 1.0,
+    "threshold": 0.0378,
+    "tp": 1083,
+    "fp": 15587,
+    "fn": 0,
+    "tn": 0
+  }
+}

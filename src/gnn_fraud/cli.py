@@ -83,6 +83,54 @@ def eda(
 
 
 @app.command()
+def baselines(
+    root: str = "data/raw/elliptic",
+    results_path: str = "docs/results/baselines.json",
+    seed: int = 42,
+) -> None:
+    """Run non-graph baselines and report imbalanced-aware metrics on test.
+
+    Requires the ``gnn`` extra (data loading); ``boost`` adds XGBoost.
+    """
+    import json
+    from pathlib import Path
+
+    from gnn_fraud.ingestion.elliptic import load_elliptic
+    from gnn_fraud.models.baselines import run_baselines
+
+    console.print("[bold]Loading Elliptic and running baselines...[/bold]")
+    data = load_elliptic(root)
+    results = run_baselines(data, seed=seed)
+
+    table = Table(title="Non-graph baselines on Elliptic (temporal test split)")
+    for col in ("model", "PR-AUC", "ROC-AUC", "F1", "precision", "recall"):
+        table.add_column(col, justify="right" if col != "model" else "left")
+    for name, m in results.items():
+        r = m.as_row()
+        table.add_row(
+            name,
+            f"{r['pr_auc']:.4f}",
+            f"{r['roc_auc']:.4f}",
+            f"{r['f1']:.4f}",
+            f"{r['precision']:.4f}",
+            f"{r['recall']:.4f}",
+        )
+    console.print(table)
+
+    out = Path(results_path)
+    out.parent.mkdir(parents=True, exist_ok=True)
+    payload = {name: m.as_row() for name, m in results.items()}
+    out.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
+
+    from gnn_fraud.viz.results import plot_baseline_metrics
+
+    fig_path = Path("docs/media/results/baselines.png")
+    fig_path.parent.mkdir(parents=True, exist_ok=True)
+    plot_baseline_metrics(payload, fig_path)
+    console.print(f"Saved results to {out} and figure to {fig_path}")
+
+
+@app.command()
 def smoke_train() -> None:
     """Run a tiny 1-epoch smoke train (requires the ``gnn`` extra).
 

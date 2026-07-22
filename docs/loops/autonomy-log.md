@@ -63,3 +63,38 @@ concurrently uninstalled torch mid-run - do not run those in parallel.
 
 **Next.** Step 2 - non-graph baselines: LogReg / XGBoost on node features + an
 unsupervised autoencoder (a la USAD), with the temporal split and PR-AUC / F1.
+
+---
+
+## Step 2 - Non-graph baselines
+
+**Plan.** Establish an honest reference without graph structure: logistic
+regression, XGBoost, and an unsupervised autoencoder (USAD nod). Temporal split,
+scaler fit on train only, threshold chosen on train, PR-AUC primary.
+
+**Implemented.**
+- `eval/metrics.py`: `evaluate_binary` (PR-AUC, ROC-AUC, F1/precision/recall,
+  confusion) + `best_f1_threshold`; unit-tested in the fast tier.
+- `train/split.py`: `labeled_temporal_split` (surfaces PyG's masks as arrays).
+- `models/autoencoder.py`: MLP autoencoder trained on normal rows (USAD instinct).
+- `models/baselines.py`: `run_baselines` (logreg + optional xgboost + AE).
+- `cli.py baselines`: prints metrics, writes `docs/results/baselines.json` and a
+  figure. `viz/results.py` renders the bar chart.
+- Tests: metrics (fast) + a `run_baselines` smoke on a synthetic graph (gnn tier).
+- mypy: narrow override for `models.autoencoder` (subclasses torch `nn.Module`,
+  which is Any without torch stubs in the fast gate).
+
+**Measured (real, temporal test).** logreg PR-AUC 0.288 / F1 0.351; xgboost
+PR-AUC **0.799** / F1 **0.817**; autoencoder PR-AUC 0.038 / **ROC-AUC 0.213
+(below random)**.
+
+**Self-review (adversarial).** Numbers are reproducible via the CLI. The AE's
+worse-than-random result is reported as-is and analyzed (temporal distribution
+shift), not hidden or inverted with test knowledge. No leakage: scaler and
+threshold both fit on train. XGBoost is the honest bar for the GNN to beat.
+
+**Gate.** `bash scripts/verify.sh --full` green (fast + gnn tier tests + smoke).
+
+**Next.** Step 3 - the first GNNs: GCN -> GraphSAGE -> GAT (transductive on the
+full graph incl. unknown nodes for message passing), compared against XGBoost,
+then a temporal variant.
