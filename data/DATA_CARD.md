@@ -60,10 +60,25 @@ Notes:
 - **What**: Extends Elliptic with **actors/addresses** in addition to
   transactions -> a genuinely heterogeneous graph (address and transaction node
   types). Fits the `HeteroData` / relational-schema framing (step 4).
-- **Access**: public research repository (GitHub). To pin the exact URL, commit
-  hash, and license at ingestion.
-- **Citation**: Elliptic++ dataset (Elmougy & Liu). Cite the paper/repo.
-- **Status**: used from step 4.
+- **Source**: GitHub repo [`git-disl/EllipticPlusPlus`](https://github.com/git-disl/EllipticPlusPlus);
+  data hosted on the authors' Google Drive
+  (folder id `1MRPXz79Lu_JGLlJ21MDfML44dKN9R08l`).
+- **Paper / citation (required)**: Elmougy & Liu, *"Demystifying Fraudulent
+  Transactions and Illicit Nodes in the Bitcoin Network for Financial Forensics"*,
+  **KDD '23**, DOI [`10.1145/3580305.3599803`](https://doi.org/10.1145/3580305.3599803).
+- **Scale (from the paper/repo, to re-verify at ingestion)**:
+  - Transactions: 203,769 nodes, 234,355 edges, 183 features.
+  - Actors/addresses: 822,942 unique addresses (1,268,260 temporal interactions),
+    56 features; Address-Address edges 2,868,964; Address-Transaction edges
+    1,314,241.
+- **License**: **No explicit license file is present in the repository and no
+  formal terms of use are stated.** The data is shared publicly by the authors for
+  research, with citation required. We use it for non-commercial research only,
+  cite the KDD '23 paper, keep the raw data gitignored (never redistributed here),
+  and will contact the authors (yelmougy3@gatech.edu) if formal terms are needed.
+  This ambiguity is recorded deliberately rather than glossed over.
+- **Status**: acquired for step 4 (user-approved); raw files in
+  `data/raw/elliptic_pp/` (gitignored).
 
 ## Optional extension: real Ethereum on-chain data
 
