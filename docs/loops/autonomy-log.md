@@ -29,3 +29,37 @@ Config is frozen + validated; tests cover the missing-field and roundtrip paths.
 
 **Next.** Step 1 - ingestion of the Elliptic dataset via PyTorch Geometric +
 graph EDA (degrees, components, class imbalance, temporal structure).
+
+---
+
+## Step 1 - Ingestion + graph EDA (Elliptic)
+
+**Plan.** Load Elliptic via PyG, compute real graph statistics, and render EDA
+figures. Explain the graph data model and imbalance/temporal structure before
+any modeling. Update DATA_CARD with measured (not recited) numbers.
+
+**Implemented.**
+- `ingestion/elliptic.py`: `load_elliptic()` + generic, unit-testable
+  `graph_stats()` (counts, class balance, degree, isolated, connected components).
+- `viz/eda.py`: class-distribution, degree-distribution, and per-time-step
+  activity plots + `temporal_class_balance()`.
+- `cli.py eda`: prints a real stats table and writes figures to `docs/media/eda/`.
+- `tests/test_ingestion.py`: `graph_stats` on a synthetic graph (skipped without
+  the gnn extra); gnn tier of the gate/CI now runs pytest with the extra.
+
+**Measured (real).** 203,769 nodes / 234,355 edges / 165 features; 42,019 licit,
+4,545 illicit (9.76% of 46,564 labeled), 157,205 unknown; mean degree 2.30,
+max 473, 0 isolated; **49 components for 49 time steps** (graph ~ disjoint per
+time step). Temporal split keeps positives on both sides (3,462 / 1,083 illicit).
+
+**Self-review (adversarial).** No model results reported. Numbers come from
+`gnn-fraud eda`, reproducible. Temporal split is PyG's built-in (early -> train),
+never randomized. Replaced a slow 49x temporal-dataset loop with a single pandas
+read of the raw CSV (same numbers, deterministic). Hit a real race: running an
+`--extra gnn` command and `verify.sh` (which `uv sync` strips the extra)
+concurrently uninstalled torch mid-run - do not run those in parallel.
+
+**Gate.** `bash scripts/verify.sh --full` (to run before commit).
+
+**Next.** Step 2 - non-graph baselines: LogReg / XGBoost on node features + an
+unsupervised autoencoder (a la USAD), with the temporal split and PR-AUC / F1.

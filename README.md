@@ -26,8 +26,8 @@ imbalance (PR-AUC, minority-class F1).
 
 | Step | What | Status |
 |------|------|--------|
-| 0 | Scaffolding, green-gate, CI, agent playbook | in progress |
-| 1 | Ingestion + graph EDA (Elliptic via PyTorch Geometric) | todo |
+| 0 | Scaffolding, green-gate, CI, agent playbook | done |
+| 1 | Ingestion + graph EDA (Elliptic via PyTorch Geometric) | done |
 | 2 | Baselines: LogReg / XGBoost + an unsupervised autoencoder (USAD nod) | todo |
 | 3 | GNNs: GCN -> GraphSAGE -> GAT, plus a temporal variant | todo |
 | 4 | Heterogeneous graph (Elliptic++) + relational-foundation-model framing | todo |
@@ -41,6 +41,26 @@ Real, public data only, with provenance and license documented in
 the heterogeneous track uses **Elliptic++**. An optional extension ingests real
 Ethereum data via official APIs (Etherscan / BigQuery), rate-limit-respecting,
 with secrets kept in `.env` (never committed).
+
+## Data at a glance (step 1 EDA)
+
+Measured with `uv run --extra gnn gnn-fraud eda` on the PyG Elliptic build
+(numbers, not estimates; see [`data/DATA_CARD.md`](data/DATA_CARD.md)):
+
+- **203,769** transaction nodes, **234,355** edges, 165 features, directed.
+- Labels: 42,019 licit / 4,545 illicit / 157,205 unknown -> only 46,564 labeled;
+  illicit is **9.76% of labeled, 2.23% of all** (severe imbalance).
+- Sparse and heavy-tailed: mean degree 2.30, max 473, zero isolated nodes.
+- **49 connected components for 49 time steps**: edges barely cross time, so the
+  graph is nearly a disjoint union of per-time-step subgraphs.
+
+| Class imbalance | Degree (heavy-tailed) | Activity over time |
+|---|---|---|
+| ![classes](docs/media/eda/class_distribution.png) | ![degree](docs/media/eda/degree_distribution.png) | ![temporal](docs/media/eda/temporal.png) |
+
+The temporal panel shows the built-in train/test boundary and the sharp drop in
+illicit activity after a dark-market shutdown (~step 43) - exactly the kind of
+distribution shift a temporal split must respect and a random split would hide.
 
 ## Quickstart
 

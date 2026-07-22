@@ -50,6 +50,8 @@ uv run gnn-fraud info >/dev/null || fail "smoke CLI"
 if [ "$FULL" = "1" ]; then
   step "sync gnn extra (torch + torch-geometric)"
   uv sync --extra gnn --quiet || fail "uv sync --extra gnn"
+  step "tests with gnn extra (exercises the ingestion/torch path)"
+  uv run --extra gnn pytest || fail "gnn tests"
   step "smoke train (1 epoch on a tiny subgraph)"
   uv run --extra gnn gnn-fraud smoke-train || fail "smoke train"
 fi

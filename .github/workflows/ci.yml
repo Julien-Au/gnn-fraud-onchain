@@ -49,5 +49,7 @@ jobs:
           # Force the CPU wheel index so CI never pulls a multi-GB CUDA build.
           PIP_EXTRA_INDEX_URL: https://download.pytorch.org/whl/cpu
         run: uv sync --extra gnn
+      - name: Tests with gnn extra (ingestion / torch path)
+        run: uv run --extra gnn pytest
       - name: Smoke train (1 epoch on a tiny subgraph)
         run: uv run --extra gnn gnn-fraud smoke-train
