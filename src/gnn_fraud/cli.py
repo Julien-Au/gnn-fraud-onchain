@@ -195,6 +195,65 @@ def train_gnn(
 
 
 @app.command()
+def train_temporal(
+    root: str = "data/raw/elliptic",
+    results_path: str = "docs/results/temporal.json",
+    epochs: int = 200,
+    seed: int = 42,
+) -> None:
+    """Train EvolveGCN-O (temporal GNN) and compare to baselines + static GNNs.
+
+    Requires the ``gnn`` extra.
+    """
+    import json
+    from pathlib import Path
+
+    from gnn_fraud.ingestion.elliptic import load_elliptic, node_timesteps
+    from gnn_fraud.train.temporal_trainer import train_evolvegcn
+    from gnn_fraud.viz.results import plot_baseline_metrics
+
+    data = load_elliptic(root)
+    timesteps = node_timesteps(root)
+
+    console.print("[bold]Training EvolveGCN-O...[/bold]")
+    out = train_evolvegcn(data, timesteps, epochs=epochs, seed=seed)
+    console.print(
+        f"  evolvegcn: PR-AUC={out.metrics.pr_auc:.4f} F1={out.metrics.f1:.4f} "
+        f"(best epoch {out.best_epoch}, val PR-AUC {out.best_val_pr_auc:.4f})"
+    )
+
+    table = Table(title="EvolveGCN-O on Elliptic (temporal test split)")
+    for col in ("model", "PR-AUC", "ROC-AUC", "F1", "precision", "recall"):
+        table.add_column(col, justify="right" if col != "model" else "left")
+    r = out.metrics.as_row()
+    table.add_row(
+        "evolvegcn",
+        f"{r['pr_auc']:.4f}",
+        f"{r['roc_auc']:.4f}",
+        f"{r['f1']:.4f}",
+        f"{r['precision']:.4f}",
+        f"{r['recall']:.4f}",
+    )
+    console.print(table)
+
+    out_path = Path(results_path)
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    out_path.write_text(json.dumps({"evolvegcn": r}, indent=2) + "\n", encoding="utf-8")
+
+    # Rebuild the full comparison figure: baselines + static GNNs + temporal.
+    combined: dict[str, dict[str, float]] = {}
+    for p in ("docs/results/baselines.json", "docs/results/gnn.json"):
+        fp = Path(p)
+        if fp.exists():
+            combined.update(json.loads(fp.read_text(encoding="utf-8")))
+    combined["evolvegcn"] = r
+    fig_path = Path("docs/media/results/comparison.png")
+    fig_path.parent.mkdir(parents=True, exist_ok=True)
+    plot_baseline_metrics(combined, fig_path, title="Elliptic: baselines vs GNNs (temporal test)")
+    console.print(f"Saved results to {out_path} and comparison to {fig_path}")
+
+
+@app.command()
 def smoke_train() -> None:
     """Run a tiny 1-epoch smoke train (requires the ``gnn`` extra).
 

@@ -136,3 +136,37 @@ and the box destroyed. No standing infrastructure.
 
 **Next.** Step 4 - a temporal GNN (EvolveGCN-style) and the heterogeneous graph
 (Elliptic++), with the relational-foundation-model framing.
+
+---
+
+## Step 3b - Temporal GNN (EvolveGCN-O)
+
+**Plan.** Address step 3's temporal weakness with EvolveGCN-O, implemented from
+scratch (the reference lib pulls compiled torch-sparse and would not install).
+
+**Implemented.**
+- `models/temporal.py`: `EvolveGCNO` (GRU-evolved square weight + GCN propagation)
+  + `EvolveGCN` (proj -> 2 EvolveGCN-O layers -> classifier). Faithful to Pareja
+  et al. 2020 (verified against the reference forward logic via WebFetch).
+- `train/temporal_trainer.py`: per-time-step snapshots, sequential BPTT, leakage-safe
+  temporal val, early stopping. `cli train-temporal` + comparison figure.
+- Tests: weight actually evolves, snapshot coverage, train smoke (gnn tier).
+
+**Measured + diagnosed.** Strict split (train 1-29 / val 30-34 / test 35-49): test
+PR-AUC **0.069** (ROC 0.552). Ran a trajectory diagnostic (loss/val/test across LR
+and gradient clipping): train loss decreases, val ~0.3, test collapses to ~0.1 in
+all configs -> a real generalization failure across the post-shutdown shift, not a
+bug. Reported with two caveats: (1) harder task than the transductive static GNNs;
+(2) EvolveGCN's canonical protocol is rolling, not one far split (queued as a
+fairer experiment).
+
+**Self-review (adversarial).** The number is suspicious (below base rate), so it
+was diagnosed before reporting rather than published blind. No leakage (loss never
+touches val/test snapshots; weights evolve through them using structure only).
+Result reported as-is; the fairness caveats are stated, not used to hide it.
+
+**Gate.** Fast gate green; temporal tests validated locally with the gnn extra.
+
+**Next.** Step 4 - (a) a fair rolling temporal evaluation, and (b) the
+heterogeneous Elliptic++ graph (pending the user's green light on the data source;
+license is not explicitly stated in the repo - to confirm before download).

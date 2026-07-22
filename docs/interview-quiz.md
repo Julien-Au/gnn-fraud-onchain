@@ -98,5 +98,29 @@ to hide?**
 
 ---
 
+## Step 3b - Temporal GNN (EvolveGCN-O)
+
+**Q1. In Elliptic a transaction exists at one time step. Why does that rule out a
+per-node RNN, and what does EvolveGCN evolve instead?**
+> There is no node trajectory to feed an RNN (a transaction is not "the same node"
+> at t and t+1). EvolveGCN evolves the GCN *weight matrices* across snapshots with
+> a GRU (W_{t-1} -> W_t), so the model's parameters adapt over time.
+
+**Q2. EvolveGCN scored test PR-AUC 0.069. How did you show this is a real result,
+not a bug?**
+> A trajectory diagnostic across learning rates and gradient clipping: the training
+> loss decreased steadily (it learns) and val reached ~0.3, but test collapsed to
+> ~0.1 in every config - a generalization failure across the post-shutdown shift,
+> not a training bug.
+
+**Q3. Why is comparing EvolveGCN's 0.069 to the static GNNs' ~0.4 not yet fair?**
+> The static GNNs were transductive (test-node features participated in message
+> passing); EvolveGCN had no test-period access and extrapolated far in time.
+> EvolveGCN's canonical protocol is also rolling (predict t+1 from a model trained
+> up to t), not one far split - the fair experiment is still to run.
+
+---
+
 <!-- Step 4+ quizzes appended here. -->
+
 

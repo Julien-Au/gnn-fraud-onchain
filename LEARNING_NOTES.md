@@ -150,5 +150,35 @@ baseline yet.
 **Compute note.** Ran the training on a throwaway Hetzner box (the local machine
 was busy), then destroyed it. Repro is unchanged: same code, same seeds, CPU.
 
-<!-- Step 4+ notes: temporal GNN (EvolveGCN), heterogeneous graph (Elliptic++),
+## Step 3b - A temporal GNN (EvolveGCN-O)
+
+**Concept.** In Elliptic a transaction exists at a single time step, so there is
+no node trajectory to model with a per-node RNN. EvolveGCN instead evolves the GCN
+*weights* across the snapshot sequence: a GRU maps W_{t-1} -> W_t, and the conv
+applies A_hat @ (X @ W_t). I implemented EvolveGCN-O (Pareja et al., AAAI 2020)
+from scratch - the weight is the GRU hidden state fed with the previous weight.
+
+**Result (strict split, train 1-29 / val 30-34 / test 35-49):** test PR-AUC 0.069
+- worse than everything. A diagnostic (loss + val + test PR-AUC across LR and
+gradient clipping) confirmed: **train loss decreases (it learns), val ~0.3, but
+test collapses to ~0.1** in every config. Not a bug; a real generalization failure
+across the post-shutdown distribution shift when extrapolating far in time.
+
+**What I must be able to say:**
+- **Why it fails here**: far-horizon temporal extrapolation across a regime change
+  (dark-market shutdown). The evolved weights, fit on early steps, do not transfer
+  to the very different late steps.
+- **Why the comparison is not yet fair**: the static GNNs were transductive
+  (test-node features seen during message passing); EvolveGCN got no test-period
+  access. And EvolveGCN's canonical protocol is *rolling* (predict step t+1 from
+  a model trained up to t), not one far split - the fair experiment is queued.
+- **BPTT stability**: I checked gradient clipping and lower LR; they change the
+  trajectory slightly but not the conclusion. Good habit to verify before blaming
+  the architecture.
+- **The meta-lesson**: a suspicious number (0.069, below the base rate) gets
+  *diagnosed*, not reported blindly. The diagnostic is what turns "the model is
+  bad" into "the model learns but cannot extrapolate across the shift" - a claim I
+  can defend.
+
+<!-- Step 4+ notes: rolling temporal eval, heterogeneous graph (Elliptic++),
 relational foundation model framing. -->

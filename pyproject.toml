@@ -86,7 +86,7 @@ files = ["src/gnn_fraud"]
 # Relax the two strict rules that this triggers, but only for the modules that
 # subclass torch types - the rest of the codebase stays fully strict.
 [[tool.mypy.overrides]]
-module = ["gnn_fraud.models.autoencoder", "gnn_fraud.models.gnn"]
+module = ["gnn_fraud.models.autoencoder", "gnn_fraud.models.gnn", "gnn_fraud.models.temporal"]
 disallow_subclassing_any = false
 warn_return_any = false
 

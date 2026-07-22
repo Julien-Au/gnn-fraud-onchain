@@ -120,10 +120,41 @@ Random Forest > GCN on Elliptic). Why, concretely:
 
 GraphSAGE > GCN > GAT is itself informative: separating self from neighbor
 aggregation (SAGE) helped; attention (GAT) did not, likely because with a tiny
-mean degree (2.3) there are too few neighbors for attention to matter. These are
-exactly the failure modes that motivate **step 4** (a temporal GNN such as
-EvolveGCN, and a heterogeneous graph that adds address-level structure). No result
-is inflated: the graph does not help *yet*, and the analysis says why.
+mean degree (2.3) there are too few neighbors for attention to matter.
+
+### A temporal GNN: EvolveGCN-O (step 3b)
+
+Since each transaction lives at one time step, a temporal model cannot track a
+node over time; instead it can evolve its *weights* across the sequence of
+snapshots. I implemented **EvolveGCN-O** (Pareja et al., AAAI 2020) from scratch
+(a GRU evolves each GCN weight matrix; no fragile compiled deps) and trained it on
+a strict temporal split (train steps 1-29, val 30-34, test 35-49).
+
+| Model | PR-AUC | ROC-AUC | F1 (illicit) |
+|---|---|---|---|
+| EvolveGCN-O (strict temporal extrapolation) | 0.069 | 0.552 | 0.096 |
+
+**This underperforms everything - and the honest reason is instructive.** A
+diagnostic (train loss, val and test PR-AUC over epochs, across learning rates and
+with/without gradient clipping) shows the training loss *decreases steadily* (the
+model learns) and val PR-AUC reaches ~0.3, but **test PR-AUC collapses to ~0.1
+regardless of tuning**. So this is not a training bug; it is a genuine failure to
+generalize across the severe distribution shift (the dark-market shutdown around
+step 43) when the weights are extrapolated far beyond the training window.
+
+Two honest caveats before concluding anything about EvolveGCN:
+- **It is a harder task than the static GNNs above**, which were *transductive*
+  (test-node features participated in message passing). EvolveGCN here extrapolates
+  in time with no access to the test period during training.
+- The **standard EvolveGCN protocol is rolling** (train up to step t, predict step
+  t+1), not one far-horizon split. A rolling evaluation is the natural next
+  refinement and would give the temporal model a fair shot; the number above is the
+  strict-split result, reported as-is.
+
+Bottom line so far: **XGBoost (PR-AUC 0.80) remains the bar**, and neither static
+nor (strict-split) temporal GNNs beat it on Elliptic. No result is inflated; each
+weak result is explained and points to the next experiment (a fair rolling
+temporal protocol, and the heterogeneous Elliptic++ graph in step 4).
 
 ## Quickstart
 
