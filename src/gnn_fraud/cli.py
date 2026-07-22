@@ -254,6 +254,53 @@ def train_temporal(
 
 
 @app.command()
+def train_hetero(
+    root: str = "data/raw/elliptic_pp",
+    cache: str = "data/processed/elliptic_pp.pt",
+    results_path: str = "docs/results/hetero.json",
+    epochs: int = 200,
+    seed: int = 42,
+) -> None:
+    """Train the heterogeneous GNN on Elliptic++ (tx classification).
+
+    Requires the ``gnn`` extra and the downloaded Elliptic++ data.
+    """
+    import json
+    from pathlib import Path
+
+    from gnn_fraud.ingestion.elliptic_pp import build_hetero
+    from gnn_fraud.train.hetero_trainer import train_hetero as run_hetero
+    from gnn_fraud.viz.results import plot_baseline_metrics
+
+    console.print("[bold]Building Elliptic++ HeteroData (cached after first run)...[/bold]")
+    data = build_hetero(root, cache)
+    console.print("[bold]Training heterogeneous GNN...[/bold]")
+    out = run_hetero(data, epochs=epochs, seed=seed)
+    console.print(
+        f"  hetero-sage: PR-AUC={out.metrics.pr_auc:.4f} F1={out.metrics.f1:.4f} "
+        f"(best epoch {out.best_epoch}, val PR-AUC {out.best_val_pr_auc:.4f})"
+    )
+
+    r = out.metrics.as_row()
+    out_path = Path(results_path)
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    out_path.write_text(json.dumps({"hetero-sage": r}, indent=2) + "\n", encoding="utf-8")
+
+    combined: dict[str, dict[str, float]] = {}
+    for p in ("docs/results/baselines.json", "docs/results/gnn.json", "docs/results/temporal.json"):
+        fp = Path(p)
+        if fp.exists():
+            combined.update(json.loads(fp.read_text(encoding="utf-8")))
+    combined["hetero-sage"] = r
+    fig_path = Path("docs/media/results/comparison.png")
+    fig_path.parent.mkdir(parents=True, exist_ok=True)
+    plot_baseline_metrics(
+        combined, fig_path, title="Elliptic(++): baselines vs GNNs (temporal test)"
+    )
+    console.print(f"Saved results to {out_path} and comparison to {fig_path}")
+
+
+@app.command()
 def smoke_train() -> None:
     """Run a tiny 1-epoch smoke train (requires the ``gnn`` extra).
 

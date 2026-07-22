@@ -30,7 +30,7 @@ imbalance (PR-AUC, minority-class F1).
 | 1 | Ingestion + graph EDA (Elliptic via PyTorch Geometric) | done |
 | 2 | Baselines: LogReg / XGBoost + an unsupervised autoencoder (USAD nod) | done |
 | 3 | GNNs: GCN -> GraphSAGE -> GAT (transductive) | done |
-| 4 | Heterogeneous graph (Elliptic++) + relational-foundation-model framing | todo |
+| 4 | Heterogeneous graph (Elliptic++) + relational-foundation-model framing | done |
 | 5 | Rigorous evaluation, experiment tracking, demo (CLI / Streamlit) | todo |
 
 ## Data
@@ -151,10 +151,40 @@ Two honest caveats before concluding anything about EvolveGCN:
   refinement and would give the temporal model a fair shot; the number above is the
   strict-split result, reported as-is.
 
-Bottom line so far: **XGBoost (PR-AUC 0.80) remains the bar**, and neither static
-nor (strict-split) temporal GNNs beat it on Elliptic. No result is inflated; each
-weak result is explained and points to the next experiment (a fair rolling
-temporal protocol, and the heterogeneous Elliptic++ graph in step 4).
+Bottom line at step 3: **XGBoost (PR-AUC 0.80) remains the bar**, and neither
+static nor (strict-split) temporal GNNs beat it on Elliptic. No result is inflated;
+each weak result is explained and points to the next experiment.
+
+### Does relational structure help? Heterogeneous GNN on Elliptic++ (step 4)
+
+[Elliptic++](https://github.com/git-disl/EllipticPlusPlus) (Elmougy & Liu, KDD '23)
+adds **wallet addresses** on top of the transactions: a genuinely heterogeneous
+graph with two node types (`tx`, `addr`) and four relations (tx-tx, addr-tx,
+tx-addr, addr-addr; 822,942 addresses, 2.87M address-address edges). We classify
+the **same transactions** as before (identical labels and temporal split, so it is
+directly comparable) but now with address-level context, using a `HeteroConv`
+GraphSAGE (one convolution per relation). See [`data/DATA_CARD.md`](data/DATA_CARD.md)
+for provenance and the license note.
+
+| Model | Graph | PR-AUC | ROC-AUC | F1 (illicit) |
+|---|---|---|---|---|
+| XGBoost (baseline) | none | **0.799** | 0.928 | 0.817 |
+| **Heterogeneous SAGE** | **tx + addr (Elliptic++)** | **0.586** | 0.887 | 0.538 |
+| GraphSAGE | tx-only (Elliptic) | 0.488 | 0.877 | 0.422 |
+| GCN / GAT | tx-only | 0.29 / 0.33 | - | - |
+
+![comparison](docs/media/results/comparison.png)
+
+**The relational structure helps - this is the headline positive result.** Adding
+the address-level graph lifts the GNN from **0.488 to 0.586 PR-AUC (+20% relative)**,
+the largest graph-driven gain in the project. It still does not beat XGBoost (0.80),
+but the direction is unambiguous: **a richer relational schema yields a better graph
+model.** That is exactly the thesis behind relational / "one model over many
+schemas" approaches - the graph earns its keep once the schema is rich enough to
+carry signal the tabular features miss. Honest caveats: the validation PR-AUC (0.96)
+is far above test (0.59), so the temporal shift still bites; and address features
+are mean-aggregated per address (a modeling choice, documented). Next: a fair
+rolling temporal protocol, and address-level classification on the same graph.
 
 ## Quickstart
 

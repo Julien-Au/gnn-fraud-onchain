@@ -170,3 +170,36 @@ Result reported as-is; the fairness caveats are stated, not used to hide it.
 **Next.** Step 4 - (a) a fair rolling temporal evaluation, and (b) the
 heterogeneous Elliptic++ graph (pending the user's green light on the data source;
 license is not explicitly stated in the repo - to confirm before download).
+
+---
+
+## Step 4 - Heterogeneous GNN on Elliptic++
+
+**Plan.** Build a HeteroData (tx + addr, four relations) from Elliptic++, train a
+HeteroConv GraphSAGE on the same tx-classification task/split, and see whether the
+relational structure helps.
+
+**Implemented.**
+- `ingestion/elliptic_pp.py`: parse ~2 GB CSVs -> HeteroData (203,769 tx / 822,942
+  addr; tx-tx, addr-tx, tx-addr, addr-addr), features cleaned + z-scored, cached.
+- `models/hetero.py`: `HeteroGNN` (HeteroConv + per-relation SAGEConv; chose
+  HeteroConv over `to_hetero` after hitting a torch.fx tracing bug).
+- `train/hetero_trainer.py`: ToUndirected, lazy-param warmup, temporal val,
+  early stopping. `cli train-hetero` + comparison figure. Smoke test (gnn tier).
+
+**Measured (real, same tx test split).** heterogeneous SAGE **PR-AUC 0.586** /
+F1 0.538, vs tx-only SAGE 0.488 and XGBoost 0.799. **+20% relative over the tx-only
+GNN - the biggest graph-driven gain so far.** The relational structure helps.
+
+**Self-review (adversarial).** Comparable by construction (identical tx labels,
+features scaling aside, and temporal split). Positive result but not overstated:
+still below XGBoost; val >> test gap (temporal shift) reported; address feature
+aggregation documented as a modeling choice. Hit a real NaN bug (unnormalized
+wallet features) - diagnosed and fixed with cleaning + z-scoring, not silenced.
+
+**Compute.** 2 GB parse locally -> 403 MB cached HeteroData; training was too slow
+locally (30-min timeout), so ran on a throwaway Hetzner cpx42 (code + cache
+rsynced), retrieved results, destroyed the box.
+
+**Next.** Step 5 - fair rolling temporal eval; address-level classification on the
+same graph; the short USAD->GNN write-up and a demo.

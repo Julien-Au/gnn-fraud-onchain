@@ -121,6 +121,37 @@ not a bug?**
 
 ---
 
-<!-- Step 4+ quizzes appended here. -->
+## Step 4 - Heterogeneous GNN (Elliptic++)
+
+**Q1. What makes Elliptic++ a heterogeneous graph, and how does a HeteroConv GNN
+handle it?**
+> It has two node types (transactions, addresses) and four relations (tx-tx,
+> addr-tx, tx-addr, addr-addr). HeteroConv keeps one convolution per relation and
+> aggregates the incoming messages per destination node type, so the model is
+> parameterized by the schema rather than hard-coded to one graph.
+
+**Q2. The hetero GNN scored 0.586 vs 0.488 for the tx-only GNN. Why does the
+address structure help, and why is the comparison fair?**
+> Illicit transactions are betrayed by the addresses they touch (shared wallets,
+> address-level flow) - signal in the addr-tx / addr-addr relations that a tx-only
+> graph and the tabular features miss. It is fair because the task, labels and
+> temporal split are identical; only the graph changed.
+
+**Q3. This is the "relational foundation model" pitch in miniature. Explain the
+link.**
+> The same encoder definition adapted to a new schema (2 node types, 4 relations)
+> with no architecture rewrite - it is parameterized by the graph's metadata.
+> Generalize that across many schemas and you get one model over many relational
+> structures. And empirically, a richer relational schema gave a better model.
+
+**Q4. Name two honest caveats you would raise yourself.**
+> Validation PR-AUC (0.96) is far above test (0.59), so the temporal shift still
+> hurts generalization; and address features are mean-aggregated per address (a
+> modeling choice, since addresses span many time steps and edges are timeless).
+
+---
+
+<!-- Step 5+ quizzes appended here. -->
+
 
 

@@ -180,5 +180,34 @@ across the post-shutdown distribution shift when extrapolating far in time.
   bad" into "the model learns but cannot extrapolate across the shift" - a claim I
   can defend.
 
-<!-- Step 4+ notes: rolling temporal eval, heterogeneous graph (Elliptic++),
-relational foundation model framing. -->
+## Step 4 - Heterogeneous graph (Elliptic++): the graph earns its keep
+
+**Concept.** A heterogeneous graph has multiple node and edge types. Elliptic++ adds
+`addr` (wallet) nodes to the `tx` nodes, with relations tx-tx, addr-tx, tx-addr,
+addr-addr. A `HeteroConv` GNN keeps one message-passing function per relation and
+aggregates per destination node type - so the model is parameterized by the schema,
+which is the bridge to the "one model over many relational schemas" idea.
+
+**Result (same tx labels/split as before, so comparable):** heterogeneous SAGE
+**PR-AUC 0.586**, up from 0.488 for the tx-only GraphSAGE - **+20% relative, the
+biggest graph-driven gain in the project.** Still below XGBoost (0.80), but the
+trend is the point.
+
+**What I must be able to say (this is the money slide):**
+- **Why the hetero graph helps**: illicit transactions are betrayed by the
+  *addresses* they touch (shared wallets, address-level flow) - signal that lives
+  in the addr-tx and addr-addr relations, invisible to a tx-only graph and to the
+  tabular features. Adding that structure is what closed part of the gap to XGBoost.
+- **The relational-foundation-model link**: the same encoder definition adapted to
+  a new schema (two node types, four relations) with no architecture rewrite -
+  HeteroConv/`to_hetero` parameterize by `metadata`. Scale that idea across many
+  schemas and you get a relational foundation model.
+- **Honest caveats**: val PR-AUC 0.96 >> test 0.59 - the temporal shift still hurts
+  generalization; address features are mean-aggregated per address (addresses span
+  many time steps, edges are timestamp-free), a documented modeling choice.
+- **Engineering reality**: 2 GB of CSVs -> a 1M-node / 8.8M-edge HeteroData; hit
+  and fixed a NaN-propagation bug (unnormalized wallet features with huge scales)
+  by cleaning + z-scoring features; ran training on a throwaway cloud box (local
+  was too slow) and destroyed it.
+
+<!-- Step 5+ notes: rolling temporal eval, address-level task, demo, write-up. -->
