@@ -29,7 +29,7 @@ imbalance (PR-AUC, minority-class F1).
 | 0 | Scaffolding, green-gate, CI, agent playbook | done |
 | 1 | Ingestion + graph EDA (Elliptic via PyTorch Geometric) | done |
 | 2 | Baselines: LogReg / XGBoost + an unsupervised autoencoder (USAD nod) | done |
-| 3 | GNNs: GCN -> GraphSAGE -> GAT, plus a temporal variant | todo |
+| 3 | GNNs: GCN -> GraphSAGE -> GAT (transductive) | done |
 | 4 | Heterogeneous graph (Elliptic++) + relational-foundation-model framing | todo |
 | 5 | Rigorous evaluation, experiment tracking, demo (CLI / Streamlit) | todo |
 
@@ -89,6 +89,41 @@ Reading these honestly:
   reported as-is; it is exactly the motivation for adding graph structure and
   temporal modeling (steps 3-4). A USAD-style adversarial refinement is a noted
   future variant, not a claim.
+
+### Do GNNs beat the baseline? (step 3)
+
+GCN, GraphSAGE and GAT, trained **transductively** on the full graph (unknown
+nodes included for message passing), model-selected on a **temporal** validation
+slice, evaluated on the same temporal test split (raw numbers in
+[`docs/results/gnn.json`](docs/results/gnn.json)):
+
+| Model | PR-AUC | ROC-AUC | F1 (illicit) |
+|---|---|---|---|
+| XGBoost (baseline) | **0.799** | 0.928 | **0.817** |
+| GraphSAGE | 0.488 | 0.877 | 0.422 |
+| GAT | 0.332 | 0.863 | 0.379 |
+| GCN | 0.294 | 0.814 | 0.436 |
+| Logistic regression (baseline) | 0.288 | 0.881 | 0.351 |
+
+![comparison](docs/media/results/comparison.png)
+
+**Honest headline: vanilla GNNs do not beat XGBoost here** (best GNN, GraphSAGE,
+0.49 vs 0.80 PR-AUC). This matches the literature (Weber et al., 2019, found
+Random Forest > GCN on Elliptic). Why, concretely:
+- The 165 node features already include **72 aggregated neighbor features**, so a
+  lot of the graph signal is *already in the tabular input* that XGBoost sees.
+- The graph is **disconnected per time step** (49 components ~ 49 steps), so 2-hop
+  message passing only reaches same-step neighbors - a limited receptive field.
+- **Temporal distribution shift** (the dark-market shutdown) hurts a model trained
+  on early steps and tested on later ones; a transductive GNN has no temporal
+  mechanism to adapt.
+
+GraphSAGE > GCN > GAT is itself informative: separating self from neighbor
+aggregation (SAGE) helped; attention (GAT) did not, likely because with a tiny
+mean degree (2.3) there are too few neighbors for attention to matter. These are
+exactly the failure modes that motivate **step 4** (a temporal GNN such as
+EvolveGCN, and a heterogeneous graph that adds address-level structure). No result
+is inflated: the graph does not help *yet*, and the analysis says why.
 
 ## Quickstart
 

@@ -68,4 +68,35 @@ nodes XGBoost misses (recall only 0.70)?**
 
 ---
 
-<!-- Step 3+ quizzes appended here. -->
+## Step 3 - First GNNs
+
+**Q1. In one sentence each, what does GCN, GraphSAGE, and GAT change relative to
+the previous one?**
+> GCN: normalized mean of neighbors. GraphSAGE: keep the node's own representation
+> distinct from the aggregated neighbors (and aim for inductive use). GAT: learn
+> attention weights so neighbors are not weighted equally.
+
+**Q2. On Elliptic the best GNN (SAGE, PR-AUC 0.49) loses to XGBoost (0.80). Give
+three reasons.**
+> (1) The 165 features already include 72 aggregated-neighbor features, so graph
+> signal is partly in XGBoost's input. (2) The graph is disconnected per time step,
+> so message passing has a small receptive field. (3) Temporal distribution shift
+> (dark-market shutdown) - a transductive GNN has no mechanism to adapt over time.
+
+**Q3. Why does attention (GAT) not help here, and what is over-smoothing?**
+> Mean degree is ~2.3, so with about two neighbors there is little for attention
+> to weight; the extra parameters mostly add variance. Over-smoothing: stacking
+> many message-passing layers repeatedly averages neighborhoods, driving all node
+> representations toward the same value and erasing useful distinctions - which is
+> why we use shallow (2-layer) GNNs.
+
+**Q4. Why is "the graph does not help yet" a good result to present, not a failure
+to hide?**
+> Because it is real and it is *explained*, and it motivates the next step
+> (temporal + heterogeneous modeling) on evidence rather than reflex. A jury
+> trusts an analyzed negative result more than an unexplained win.
+
+---
+
+<!-- Step 4+ quizzes appended here. -->
+

@@ -67,7 +67,9 @@ src = ["src", "tests"]
 # Sensible, portfolio-grade default: pyflakes, pycodestyle, isort, bugbear,
 # comprehensions, pyupgrade, naming.
 select = ["E", "F", "I", "B", "C4", "UP", "N", "W"]
-ignore = ["E501"]  # line length handled by the formatter, not the linter
+# E501: line length is the formatter's job. N812: `torch.nn.functional as F` is
+# the universal PyTorch convention.
+ignore = ["E501", "N812"]
 
 # --- Typecheck ----------------------------------------------------------------
 [tool.mypy]
@@ -84,7 +86,7 @@ files = ["src/gnn_fraud"]
 # Relax the two strict rules that this triggers, but only for the modules that
 # subclass torch types - the rest of the codebase stays fully strict.
 [[tool.mypy.overrides]]
-module = ["gnn_fraud.models.autoencoder"]
+module = ["gnn_fraud.models.autoencoder", "gnn_fraud.models.gnn"]
 disallow_subclassing_any = false
 warn_return_any = false
 

@@ -14,9 +14,12 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Any
 
 import numpy as np
+import pandas as pd
 import torch
+from numpy.typing import NDArray
 from scipy.sparse import coo_matrix
 from scipy.sparse.csgraph import connected_components
 from torch_geometric.data import Data
@@ -37,6 +40,22 @@ def load_elliptic(root: str | Path = "data/raw/elliptic") -> Data:
     """
     dataset = EllipticBitcoinDataset(root=str(root))
     return dataset[0]
+
+
+def node_timesteps(root: str | Path = "data/raw/elliptic") -> NDArray[Any]:
+    """Return each node's time step (1..49), aligned to PyG node index order.
+
+    PyG assigns node indices in the row order of the features CSV, so the time
+    step column (column 1) is already aligned to ``data.x`` row order. Callers
+    should assert alignment against the built-in masks (see the trainer).
+    """
+    feats = pd.read_csv(
+        Path(root) / "raw" / "elliptic_txs_features.csv",
+        header=None,
+        usecols=[1],
+        names=["time"],
+    )
+    return feats["time"].to_numpy()
 
 
 @dataclass(frozen=True, slots=True)

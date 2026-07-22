@@ -112,5 +112,43 @@ primary.
   adversarial part). So the baseline is honest about what carries over and what
   does not.
 
-<!-- Step 3+ notes appended here: message passing, GCN/SAGE/GAT, over-smoothing,
-heterogeneous/temporal graphs. -->
+## Step 3 - First GNNs (GCN -> GraphSAGE -> GAT)
+
+**Concept: message passing.** Each layer updates a node by aggregating its
+neighbors' representations, then transforming. Stack L layers -> a node sees its
+L-hop neighborhood. The three architectures differ in *how* they aggregate:
+- **GCN**: normalized mean of neighbors (symmetric degree normalization), one
+  shared linear map. Simple, no neighbor weighting.
+- **GraphSAGE**: aggregate neighbors, then combine with the node's *own* previous
+  representation (self vs neighbors kept distinct); designed to be inductive.
+- **GAT**: learn attention weights so some neighbors count more; multi-head.
+
+**Real results (transductive, temporal test):** GCN 0.294 / SAGE **0.488** / GAT
+0.332 PR-AUC, vs XGBoost **0.799**. The graph does **not** beat the tabular
+baseline yet.
+
+**What I must be able to explain (this is the interesting part):**
+- **Why GNNs lose to XGBoost on Elliptic.** (1) The features already contain 72
+  *aggregated neighbor* features, so much graph signal is in XGBoost's input too.
+  (2) The graph is disconnected per time step, so message passing has a small
+  receptive field. (3) Temporal shift: a transductive GNN has no mechanism to
+  adapt from early to late steps. This is a documented result (Weber et al. 2019).
+- **Why SAGE > GCN > GAT here.** Keeping self distinct from neighbor aggregation
+  (SAGE) helps; attention (GAT) does not, plausibly because mean degree is only
+  2.3 - with ~2 neighbors there is little for attention to weight, and the extra
+  parameters just add variance.
+- **Over-smoothing** (why 2 layers, not 10): stacking many message-passing layers
+  makes all node representations converge to similar values (repeated averaging ->
+  a low-pass filter), erasing the distinctions we need. Shallow GNNs sidestep it.
+- **Transductive vs inductive**: here we train and test on one fixed graph
+  (transductive) and let unknown nodes carry messages; SAGE would also allow
+  scoring brand-new nodes (inductive), relevant for deployment.
+- **Honesty framing for the jury**: a negative result, correctly analyzed, is
+  worth more than an inflated one. It sets up step 4 (temporal GNN + heterogeneous
+  graph) as a *motivated* next step, not a reflex.
+
+**Compute note.** Ran the training on a throwaway Hetzner box (the local machine
+was busy), then destroyed it. Repro is unchanged: same code, same seeds, CPU.
+
+<!-- Step 4+ notes: temporal GNN (EvolveGCN), heterogeneous graph (Elliptic++),
+relational foundation model framing. -->

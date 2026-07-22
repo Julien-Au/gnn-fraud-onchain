@@ -98,3 +98,41 @@ threshold both fit on train. XGBoost is the honest bar for the GNN to beat.
 **Next.** Step 3 - the first GNNs: GCN -> GraphSAGE -> GAT (transductive on the
 full graph incl. unknown nodes for message passing), compared against XGBoost,
 then a temporal variant.
+
+---
+
+## Step 3 - First GNNs (GCN / GraphSAGE / GAT)
+
+**Plan.** Implement GCN -> GraphSAGE -> GAT (2-layer, transductive), a trainer with
+a *temporal* validation slice (latest train steps) and early stopping, compare to
+XGBoost. Explain what each architecture changes.
+
+**Implemented.**
+- `models/gnn.py`: GCN, GraphSAGE, GAT + `build_model` factory.
+- `ingestion/elliptic.py`: `node_timesteps()` (aligned to node order, asserted).
+- `train/gnn_trainer.py`: transductive full-batch training, temporal val split
+  (with an alignment assertion vs the built-in masks), class-weighted loss,
+  early stopping on val PR-AUC, threshold chosen on val.
+- `cli.py train-gnn` + `viz/results.py` comparison chart.
+- Tests: model factory, temporal-mask partition, and a 3-model train smoke (gnn
+  tier). mypy override extended to `models.gnn`; ruff ignores N812 (torch's `F`).
+
+**Measured (real, temporal test).** GCN PR-AUC 0.294 / SAGE **0.488** / GAT 0.332,
+vs XGBoost **0.799**. Vanilla GNNs do not beat the tabular baseline (documented
+Elliptic result). Analyzed: aggregated features already in XGBoost's input;
+per-time-step disconnection limits the receptive field; temporal shift; low mean
+degree makes attention unhelpful.
+
+**Self-review (adversarial).** No leakage: temporal val carved from train only,
+threshold chosen on val, test untouched. Negative result reported as-is and
+explained, not inflated. Seeds fixed. Alignment of timesteps to node order is
+asserted at runtime.
+
+**Compute.** Local machine was saturated by an unrelated user job, so training ran
+on a throwaway Hetzner cpx42 box (code rsynced, deps via uv), results retrieved,
+and the box destroyed. No standing infrastructure.
+
+**Gate.** Fast gate green locally; gnn-tier tests run in CI.
+
+**Next.** Step 4 - a temporal GNN (EvolveGCN-style) and the heterogeneous graph
+(Elliptic++), with the relational-foundation-model framing.

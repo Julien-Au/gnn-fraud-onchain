@@ -131,6 +131,70 @@ def baselines(
 
 
 @app.command()
+def train_gnn(
+    models: str = "gcn,sage,gat",
+    root: str = "data/raw/elliptic",
+    results_path: str = "docs/results/gnn.json",
+    epochs: int = 200,
+    seed: int = 42,
+) -> None:
+    """Train GNNs (GCN/SAGE/GAT) transductively and compare to the baselines.
+
+    Requires the ``gnn`` extra.
+    """
+    import json
+    from pathlib import Path
+
+    from gnn_fraud.ingestion.elliptic import load_elliptic, node_timesteps
+    from gnn_fraud.train.gnn_trainer import train_gnn as run_train_gnn
+    from gnn_fraud.viz.results import plot_baseline_metrics
+
+    data = load_elliptic(root)
+    timesteps = node_timesteps(root)
+
+    outcomes = {}
+    for name in [m.strip() for m in models.split(",") if m.strip()]:
+        console.print(f"[bold]Training {name}...[/bold]")
+        out = run_train_gnn(data, timesteps, name, epochs=epochs, seed=seed)
+        outcomes[name] = out
+        console.print(
+            f"  {name}: PR-AUC={out.metrics.pr_auc:.4f} F1={out.metrics.f1:.4f} "
+            f"(best epoch {out.best_epoch}, val PR-AUC {out.best_val_pr_auc:.4f})"
+        )
+
+    table = Table(title="GNNs on Elliptic (temporal test split)")
+    for col in ("model", "PR-AUC", "ROC-AUC", "F1", "precision", "recall"):
+        table.add_column(col, justify="right" if col != "model" else "left")
+    for name, out in outcomes.items():
+        r = out.metrics.as_row()
+        table.add_row(
+            name,
+            f"{r['pr_auc']:.4f}",
+            f"{r['roc_auc']:.4f}",
+            f"{r['f1']:.4f}",
+            f"{r['precision']:.4f}",
+            f"{r['recall']:.4f}",
+        )
+    console.print(table)
+
+    out_path = Path(results_path)
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    payload = {name: out.metrics.as_row() for name, out in outcomes.items()}
+    out_path.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
+
+    # Comparison figure: baselines (if present) + GNNs.
+    combined: dict[str, dict[str, float]] = {}
+    baselines_json = Path("docs/results/baselines.json")
+    if baselines_json.exists():
+        combined.update(json.loads(baselines_json.read_text(encoding="utf-8")))
+    combined.update(payload)
+    fig_path = Path("docs/media/results/comparison.png")
+    fig_path.parent.mkdir(parents=True, exist_ok=True)
+    plot_baseline_metrics(combined, fig_path, title="Elliptic: baselines vs GNNs (temporal test)")
+    console.print(f"Saved results to {out_path} and comparison to {fig_path}")
+
+
+@app.command()
 def smoke_train() -> None:
     """Run a tiny 1-epoch smoke train (requires the ``gnn`` extra).
 
