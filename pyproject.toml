@@ -1,0 +1,87 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "gnn-fraud-onchain"
+version = "0.0.1"
+description = "Anomaly / fraud detection on on-chain transaction graphs with Graph Neural Networks."
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.10"
+authors = [{ name = "Julien Audibert" }]
+keywords = ["graph-neural-networks", "fraud-detection", "blockchain", "anomaly-detection", "pytorch-geometric"]
+
+# Core dependencies: pure-Python data/science stack used from step 1 (EDA,
+# baselines). The heavy graph-learning stack lives in the [gnn] extra so the
+# step-0 green-gate stays fast and does not pull torch until a module needs it.
+dependencies = [
+  "numpy>=1.26,<2.0",
+  "pandas>=2.1",
+  "pyyaml>=6.0",
+  "scikit-learn>=1.4",
+  "matplotlib>=3.8",
+  "networkx>=3.2",
+  "typer>=0.12",
+  "rich>=13.7",
+]
+
+[project.optional-dependencies]
+# The graph-learning stack. Installed with `uv sync --extra gnn`.
+# torch/torch-geometric are pinned to CPU-friendly versions; see docs/loops.
+gnn = [
+  "torch>=2.2,<2.4",
+  "torch-geometric>=2.5",
+]
+# Gradient-boosted baseline (step 2).
+boost = ["xgboost>=2.0"]
+# Interactive demo (step 5).
+demo = ["streamlit>=1.33"]
+
+[project.scripts]
+gnn-fraud = "gnn_fraud.cli:app"
+
+[project.urls]
+Repository = "https://github.com/Julien-Au/gnn-fraud-onchain"
+
+[dependency-groups]
+# Dev tooling (PEP 735). Installed by default with `uv sync`.
+dev = [
+  "ruff>=0.5",
+  "mypy>=1.10",
+  "pytest>=8.2",
+  "types-PyYAML>=6.0",
+  "pandas-stubs>=2.1",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/gnn_fraud"]
+
+# --- Lint ---------------------------------------------------------------------
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+# Sensible, portfolio-grade default: pyflakes, pycodestyle, isort, bugbear,
+# comprehensions, pyupgrade, naming.
+select = ["E", "F", "I", "B", "C4", "UP", "N", "W"]
+ignore = ["E501"]  # line length handled by the formatter, not the linter
+
+# --- Typecheck ----------------------------------------------------------------
+[tool.mypy]
+python_version = "3.10"
+strict = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+no_implicit_optional = true
+# Third-party libs without stubs must not fail the gate.
+ignore_missing_imports = true
+files = ["src/gnn_fraud"]
+
+# --- Tests --------------------------------------------------------------------
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+pythonpath = ["src"]

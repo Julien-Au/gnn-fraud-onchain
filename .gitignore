@@ -1,0 +1,35 @@
+# --- Python ---
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+.venv/
+venv/
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+.ipynb_checkpoints/
+
+# --- Secrets (never commit) ---
+.env
+*.key
+
+# --- Data (never commit raw/processed graphs; provenance lives in DATA_CARD.md) ---
+data/raw/
+data/processed/
+*.pt
+!data/.gitkeep
+
+# --- Experiment artifacts ---
+runs/
+outputs/
+lightning_logs/
+wandb/
+*.ckpt
+
+# --- OS / editor ---
+.DS_Store
+.idea/
+.vscode/

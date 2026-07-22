@@ -1,0 +1,53 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  quality:
+    name: Lint, typecheck, unit tests (fast, no torch)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          enable-cache: true
+      - name: Set up Python
+        run: uv python install 3.10
+      - name: Sync dev environment
+        run: uv sync
+      - name: Lint (ruff)
+        run: uv run ruff check src tests
+      - name: Format check (ruff)
+        run: uv run ruff format --check src tests
+      - name: Typecheck (mypy)
+        run: uv run mypy
+      - name: Unit tests (pytest)
+        run: uv run pytest
+      - name: Smoke CLI
+        run: uv run gnn-fraud info
+
+  gnn:
+    name: Graph stack smoke (torch + PyG)
+    runs-on: ubuntu-latest
+    # Heavier job: installs torch (CPU) + torch-geometric and runs a tiny
+    # 1-epoch smoke train. Kept separate so the fast gate above always reports
+    # first. Currently a no-op smoke until step 1+ lands the real models.
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          enable-cache: true
+      - name: Set up Python
+        run: uv python install 3.10
+      - name: Sync with gnn extra (CPU torch)
+        env:
+          # Force the CPU wheel index so CI never pulls a multi-GB CUDA build.
+          PIP_EXTRA_INDEX_URL: https://download.pytorch.org/whl/cpu
+        run: uv sync --extra gnn
+      - name: Smoke train (1 epoch on a tiny subgraph)
+        run: uv run --extra gnn gnn-fraud smoke-train
