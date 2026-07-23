@@ -210,4 +210,23 @@ trend is the point.
   by cleaning + z-scoring features; ran training on a throwaway cloud box (local
   was too slow) and destroyed it.
 
-<!-- Step 5+ notes: rolling temporal eval, address-level task, demo, write-up. -->
+## Step 5 extras - rolling backtest, address task, Docker
+
+**Rolling temporal backtest (EvolveGCN's fair shot).** With a fuller training budget
+and a *per-time-step* rolling evaluation, aggregate test PR-AUC rises only to 0.100.
+The value is the breakdown: PR-AUC collapses at the dark-market shutdown (steps
+44-46: 0.012 / 0.010 / 0.005) and recovers after. Lesson to say out loud: *when a
+temporal model fails, show the failure over the horizon* - an aggregate number hides
+a regime change that a per-step curve makes obvious.
+
+**Address-level classification.** Pointing the same HeteroConv model at the `addr`
+node type instead of `tx` detects illicit wallets: PR-AUC 0.456, F1 0.529 on 92,451
+test addresses. The engineering point is the payoff of a *schema-parameterized*
+model: `train-hetero --target addr` reuses the exact architecture with a one-word
+change. That is the concrete version of "one model over many relational schemas."
+Modeling choice: addresses split by **first-seen** time step (they span many steps).
+
+**Docker.** A `uv`-based image (`docker build ...`) gives a second, OS-level
+reproducibility guarantee on top of the locked env, and a CI `docker` job smoke-runs
+the CLI in the image. The core image stays small; the graph stack is an opt-in build
+arg (`--build-arg EXTRAS="--extra gnn"`).

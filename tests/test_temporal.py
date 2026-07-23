@@ -11,7 +11,12 @@ import torch  # noqa: E402
 from torch_geometric.data import Data  # noqa: E402
 
 from gnn_fraud.models.temporal import EvolveGCNO  # noqa: E402
-from gnn_fraud.train.temporal_trainer import build_snapshots, train_evolvegcn  # noqa: E402
+from gnn_fraud.train.temporal_trainer import (  # noqa: E402
+    build_snapshots,
+    fit_evolvegcn,
+    per_timestep_prauc,
+    train_evolvegcn,
+)
 
 
 def test_evolvegcno_evolves_weight() -> None:
@@ -54,3 +59,13 @@ def test_train_evolvegcn_smoke() -> None:
     out = train_evolvegcn(data, ts, epochs=3, patience=3, seed=0, val_start=30)
     assert 0.0 <= out.metrics.pr_auc <= 1.0
     assert 0.0 <= out.metrics.f1 <= 1.0
+
+
+def test_per_timestep_backtest() -> None:
+    data, ts = _synthetic()
+    model, snaps, _ = fit_evolvegcn(data, ts, epochs=3, patience=3, seed=0, val_start=33)
+    rows = per_timestep_prauc(model, snaps, 35, 40)
+    for t, n_illicit, pr in rows:
+        assert 35 <= t <= 40
+        assert n_illicit > 0
+        assert 0.0 <= pr <= 1.0

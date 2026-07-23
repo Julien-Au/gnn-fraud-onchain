@@ -1,0 +1,91 @@
+{
+  "aggregate": {
+    "pr_auc": 0.1003,
+    "roc_auc": 0.6634,
+    "f1": 0.181,
+    "precision": 0.1061,
+    "recall": 0.615,
+    "threshold": 0.172,
+    "tp": 666,
+    "fp": 5612,
+    "fn": 417,
+    "tn": 9975
+  },
+  "per_timestep": [
+    {
+      "t": 35,
+      "illicit": 182,
+      "pr_auc": 0.2058
+    },
+    {
+      "t": 36,
+      "illicit": 33,
+      "pr_auc": 0.0289
+    },
+    {
+      "t": 37,
+      "illicit": 40,
+      "pr_auc": 0.1507
+    },
+    {
+      "t": 38,
+      "illicit": 111,
+      "pr_auc": 0.169
+    },
+    {
+      "t": 39,
+      "illicit": 81,
+      "pr_auc": 0.0832
+    },
+    {
+      "t": 40,
+      "illicit": 112,
+      "pr_auc": 0.1517
+    },
+    {
+      "t": 41,
+      "illicit": 116,
+      "pr_auc": 0.1052
+    },
+    {
+      "t": 42,
+      "illicit": 239,
+      "pr_auc": 0.2405
+    },
+    {
+      "t": 43,
+      "illicit": 24,
+      "pr_auc": 0.0918
+    },
+    {
+      "t": 44,
+      "illicit": 24,
+      "pr_auc": 0.0122
+    },
+    {
+      "t": 45,
+      "illicit": 5,
+      "pr_auc": 0.0099
+    },
+    {
+      "t": 46,
+      "illicit": 2,
+      "pr_auc": 0.0048
+    },
+    {
+      "t": 47,
+      "illicit": 22,
+      "pr_auc": 0.0956
+    },
+    {
+      "t": 48,
+      "illicit": 36,
+      "pr_auc": 0.2484
+    },
+    {
+      "t": 49,
+      "illicit": 56,
+      "pr_auc": 0.154
+    }
+  ]
+}

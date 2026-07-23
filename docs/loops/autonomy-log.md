@@ -233,3 +233,28 @@ are mostly "unknown", reported honestly, since 77% of nodes are unlabeled).
 
 **Next (optional extras, not required deliverables).** Fair rolling temporal eval
 (EvolveGCN's fair shot); address-level classification on the same hetero graph.
+
+---
+
+## Step 5 extras - rolling backtest, address task, Docker
+
+**Implemented.**
+- Rolling temporal backtest: `fit_evolvegcn` (exposes the model) + `per_timestep_prauc`
+  + `cli backtest-temporal` + `plot_temporal_backtest`. Aggregate PR-AUC 0.100;
+  per-step figure shows the collapse at the shutdown (steps 44-46 ~0.01).
+- Address-level task: `elliptic_pp` now adds address labels + first-seen temporal
+  split; `HeteroGNN`/`train_hetero` take a `target` node type; `cli train-hetero
+  --target addr`. Result: PR-AUC 0.456 / F1 0.529 on 92,451 test addresses.
+- Docker: `Dockerfile` (uv-based, core image + `--build-arg EXTRAS`), `.dockerignore`,
+  CI `docker` job (build + run `gnn-fraud info`). Verified locally.
+- Tests: `per_timestep_prauc` and `train_hetero(target="addr")` smoke (gnn tier).
+
+**Self-review (adversarial).** Rolling result reported as-is (still a failure) with
+the per-step figure making the reason visible. Address task labeled honestly as a
+*different* task (not comparable to the tx numbers). Heavy runs on a throwaway box,
+destroyed after (confirmed zero residual servers).
+
+**Gate.** Fast gate green; gnn-tier tests green; Docker image builds and runs.
+
+**Status.** Steps 0-5 plus all three optional extras are done. The repo is a
+complete, honest, CI-gated study.

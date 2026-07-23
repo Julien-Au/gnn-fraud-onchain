@@ -151,7 +151,33 @@ link.**
 
 ---
 
-<!-- Step 5+ quizzes appended here. -->
+## Step 5 extras
+
+**Q1. EvolveGCN's aggregate PR-AUC only rose to 0.100 with a fair rolling protocol.
+Why is the per-time-step backtest more informative than that number?**
+> Because the aggregate hides *where* it fails. The per-step curve shows PR-AUC
+> collapsing at the dark-market shutdown (steps 44-46 ~0.01) and recovering after -
+> pinpointing the regime change as the cause. Always show a temporal model's failure
+> over the horizon.
+
+**Q2. You classified addresses with the same model that classified transactions.
+What did that require, and why does it matter?**
+> Only a one-word change (`--target addr`): the HeteroConv model is parameterized by
+> the schema, so it serves either node type with no architecture change. It matters
+> because it is the concrete, working version of "one model over many relational
+> schemas" - the relational-foundation-model thesis.
+
+**Q3. Why split addresses by "first-seen" time step, and why is the address result
+not directly comparable to the transaction result?**
+> Addresses span many time steps (unlike transactions), so there is no single
+> timestamp; first-seen gives a defensible temporal split. It is a different task
+> with a different label set and test set, so the PR-AUC is not comparable to the tx
+> numbers - the value is the shared pipeline, not a head-to-head score.
+
+---
+
+<!-- Later quizzes appended here. -->
+
 
 
 

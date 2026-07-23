@@ -147,9 +147,17 @@ Two honest caveats before concluding anything about EvolveGCN:
   (test-node features participated in message passing). EvolveGCN here extrapolates
   in time with no access to the test period during training.
 - The **standard EvolveGCN protocol is rolling** (train up to step t, predict step
-  t+1), not one far-horizon split. A rolling evaluation is the natural next
-  refinement and would give the temporal model a fair shot; the number above is the
-  strict-split result, reported as-is.
+  t+1), not one far-horizon split.
+
+**Giving EvolveGCN a fair shot (rolling backtest).** With a fuller training budget
+and a per-time-step rolling evaluation (`gnn-fraud backtest-temporal`), the aggregate
+test PR-AUC rises only to **0.100** - still far below every other model. But the
+per-time-step breakdown is the point: performance **collapses precisely at the
+dark-market shutdown (steps 44-46: PR-AUC 0.012 / 0.010 / 0.005)** and partially
+recovers after. So even with a fair protocol, EvolveGCN cannot handle the regime
+change - and now we can *see* exactly where and why.
+
+![temporal backtest](docs/media/results/temporal_backtest.png)
 
 Bottom line at step 3: **XGBoost (PR-AUC 0.80) remains the bar**, and neither
 static nor (strict-split) temporal GNNs beat it on Elliptic. No result is inflated;
@@ -183,8 +191,17 @@ model.** That is exactly the thesis behind relational / "one model over many
 schemas" approaches - the graph earns its keep once the schema is rich enough to
 carry signal the tabular features miss. Honest caveats: the validation PR-AUC (0.96)
 is far above test (0.59), so the temporal shift still bites; and address features
-are mean-aggregated per address (a modeling choice, documented). Next: a fair
-rolling temporal protocol, and address-level classification on the same graph.
+are mean-aggregated per address (a modeling choice, documented).
+
+### Classifying actors, not just transactions (address-level task)
+
+The same heterogeneous model, pointed at the **address** node type instead of `tx`
+(`gnn-fraud train-hetero --target addr`), detects illicit **wallets** - a different,
+arguably more actionable task (find the actors). On 92,451 test addresses (5.4%
+illicit, split by first-seen time step) it scores **PR-AUC 0.456 / F1 0.529**,
+catching 2,805 of 4,889 illicit addresses. The point is less the absolute number
+than that **one schema-parameterized model serves both node types with no
+architecture change** - the relational-foundation-model idea in practice.
 
 ## Quickstart
 
@@ -230,6 +247,8 @@ uv run --extra gnn gnn-fraud demo --timestep 42
 - **Green-gate** (`scripts/verify.sh`): ruff + mypy + pytest + smoke, mirrored by
   GitHub Actions CI. Nothing merges on a red gate. *Fix the code, never the test.*
 - **uv** for a locked, reproducible environment; fixed seeds; one YAML per experiment.
+- **Docker** (`docker build -t gnn-fraud .`) for an OS-level reproducibility guarantee;
+  a CI `docker` job smoke-runs the CLI in the image.
 - **Agent playbook** in [`docs/loops/`](docs/loops/): how this repo is built and
   maintained with self-verifying Claude Code loops (plan -> implement ->
   adversarial self-review -> note).

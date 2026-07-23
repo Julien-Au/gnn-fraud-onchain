@@ -27,8 +27,11 @@ NUM_CLASSES = 2
 class HeteroGNN(nn.Module):
     """Two HeteroConv(SAGE) layers + a classifier head on ``tx`` nodes."""
 
-    def __init__(self, metadata: Any, hidden_dim: int = 64, dropout: float = 0.5) -> None:
+    def __init__(
+        self, metadata: Any, hidden_dim: int = 64, dropout: float = 0.5, target: str = "tx"
+    ) -> None:
         super().__init__()
+        self.target = target
         edge_types = metadata[1]
         self.conv1 = HeteroConv(
             {et: SAGEConv((-1, -1), hidden_dim) for et in edge_types}, aggr="sum"
@@ -48,4 +51,4 @@ class HeteroGNN(nn.Module):
             for k, v in x_dict.items()
         }
         x_dict = self.conv2(x_dict, edge_index_dict)
-        return self.classifier(F.relu(x_dict["tx"]))
+        return self.classifier(F.relu(x_dict[self.target]))

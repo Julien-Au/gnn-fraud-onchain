@@ -254,14 +254,74 @@ def train_temporal(
 
 
 @app.command()
+def backtest_temporal(
+    root: str = "data/raw/elliptic",
+    results_path: str = "docs/results/temporal_backtest.json",
+    epochs: int = 200,
+    val_start: int = 33,
+    seed: int = 42,
+) -> None:
+    """Rolling temporal backtest of EvolveGCN-O: PR-AUC per test time step.
+
+    Gives EvolveGCN a fuller training budget (--val-start closer to 34) and reports
+    a per-time-step breakdown, so the temporal degradation is visible, not hidden in
+    one aggregate number. Requires the ``gnn`` extra.
+    """
+    import json
+    from pathlib import Path
+
+    from gnn_fraud.ingestion.elliptic import load_elliptic, node_timesteps
+    from gnn_fraud.train.temporal_trainer import fit_evolvegcn, per_timestep_prauc
+    from gnn_fraud.viz.results import plot_temporal_backtest
+
+    data = load_elliptic(root)
+    timesteps = node_timesteps(root)
+    console.print(f"[bold]Training EvolveGCN-O (rolling, val_start={val_start})...[/bold]")
+    model, snapshots, outcome = fit_evolvegcn(
+        data, timesteps, epochs=epochs, seed=seed, val_start=val_start
+    )
+    per_step = per_timestep_prauc(model, snapshots, 35, 49)
+
+    console.print(
+        f"Aggregate test PR-AUC={outcome.metrics.pr_auc:.4f} "
+        f"(best epoch {outcome.best_epoch}, val PR-AUC {outcome.best_val_pr_auc:.4f})"
+    )
+    table = Table(title="EvolveGCN-O rolling backtest (per test time step)")
+    for col in ("time step", "illicit", "PR-AUC"):
+        table.add_column(col, justify="right")
+    for t, n_ill, pr in per_step:
+        table.add_row(str(t), str(n_ill), f"{pr:.4f}")
+    console.print(table)
+
+    out_path = Path(results_path)
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    payload = {
+        "aggregate": outcome.metrics.as_row(),
+        "per_timestep": [{"t": t, "illicit": n, "pr_auc": round(pr, 4)} for t, n, pr in per_step],
+    }
+    out_path.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
+
+    fig_path = Path("docs/media/results/temporal_backtest.png")
+    fig_path.parent.mkdir(parents=True, exist_ok=True)
+    plot_temporal_backtest(
+        [t for t, _, _ in per_step],
+        [pr for _, _, pr in per_step],
+        fig_path,
+        aggregate=outcome.metrics.pr_auc,
+    )
+    console.print(f"Saved backtest to {out_path} and figure to {fig_path}")
+
+
+@app.command()
 def train_hetero(
     root: str = "data/raw/elliptic_pp",
     cache: str = "data/processed/elliptic_pp.pt",
     results_path: str = "docs/results/hetero.json",
+    target: str = "tx",
     epochs: int = 200,
     seed: int = 42,
 ) -> None:
-    """Train the heterogeneous GNN on Elliptic++ (tx classification).
+    """Train the heterogeneous GNN on Elliptic++ (--target tx or addr).
 
     Requires the ``gnn`` extra and the downloaded Elliptic++ data.
     """
@@ -272,19 +332,20 @@ def train_hetero(
     from gnn_fraud.train.hetero_trainer import train_hetero as run_hetero
     from gnn_fraud.viz.results import plot_baseline_metrics
 
+    label = f"hetero-sage-{target}"
     console.print("[bold]Building Elliptic++ HeteroData (cached after first run)...[/bold]")
     data = build_hetero(root, cache)
-    console.print("[bold]Training heterogeneous GNN...[/bold]")
-    out = run_hetero(data, epochs=epochs, seed=seed)
+    console.print(f"[bold]Training heterogeneous GNN (target={target})...[/bold]")
+    out = run_hetero(data, epochs=epochs, seed=seed, target=target)
     console.print(
-        f"  hetero-sage: PR-AUC={out.metrics.pr_auc:.4f} F1={out.metrics.f1:.4f} "
+        f"  {label}: PR-AUC={out.metrics.pr_auc:.4f} F1={out.metrics.f1:.4f} "
         f"(best epoch {out.best_epoch}, val PR-AUC {out.best_val_pr_auc:.4f})"
     )
 
     r = out.metrics.as_row()
     out_path = Path(results_path)
     out_path.parent.mkdir(parents=True, exist_ok=True)
-    out_path.write_text(json.dumps({"hetero-sage": r}, indent=2) + "\n", encoding="utf-8")
+    out_path.write_text(json.dumps({label: r}, indent=2) + "\n", encoding="utf-8")
 
     combined: dict[str, dict[str, float]] = {}
     for p in ("docs/results/baselines.json", "docs/results/gnn.json", "docs/results/temporal.json"):

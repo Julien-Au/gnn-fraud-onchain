@@ -95,11 +95,18 @@ def build_hetero(
 
     # --- Address nodes (features aggregated per unique address) --------------
     waf = pd.read_csv(root / "wallets_features.csv")
-    waf = waf.drop(columns=["Time step"])
-    addr_agg = waf.groupby("address").mean(numeric_only=True)
+    first_seen = waf.groupby("address")["Time step"].min()  # split by first appearance
+    addr_agg = waf.drop(columns=["Time step"]).groupby("address").mean(numeric_only=True)
     addr_ids = addr_agg.index.to_numpy()
     addr_feat = _clean_features(addr_agg.to_numpy(dtype=np.float32))
     addr_index = _index_map(addr_ids)
+    addr_time = first_seen.reindex(addr_ids).to_numpy().astype(np.int64)
+
+    wac = pd.read_csv(root / "wallets_classes.csv").set_index("address")["class"]
+    addr_cls = wac.reindex(addr_ids).to_numpy()
+    addr_y = np.full(len(addr_ids), -1, dtype=np.int64)
+    addr_y[addr_cls == PP_ILLICIT] = 1
+    addr_y[addr_cls == PP_LICIT] = 0
 
     # --- Edges ---------------------------------------------------------------
     tx_tx = _map_edges(pd.read_csv(root / "txs_edgelist.csv"), "txId1", "txId2", tx_index, tx_index)
@@ -127,6 +134,12 @@ def build_hetero(
     data["tx"].train_mask = labeled & (tt <= TRAIN_MAX_TIMESTEP)
     data["tx"].test_mask = labeled & (tt > TRAIN_MAX_TIMESTEP)
     data["addr"].x = torch.from_numpy(addr_feat)
+    data["addr"].y = torch.from_numpy(addr_y)
+    data["addr"].time = torch.from_numpy(addr_time)
+    addr_labeled = torch.from_numpy(addr_y >= 0)
+    att = torch.from_numpy(addr_time)
+    data["addr"].train_mask = addr_labeled & (att <= TRAIN_MAX_TIMESTEP)
+    data["addr"].test_mask = addr_labeled & (att > TRAIN_MAX_TIMESTEP)
 
     data["tx", "to", "tx"].edge_index = tx_tx
     data["addr", "to", "tx"].edge_index = addr_tx

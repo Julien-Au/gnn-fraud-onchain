@@ -20,9 +20,9 @@ from gnn_fraud.models.hetero import HeteroGNN
 from gnn_fraud.train.gnn_trainer import TrainOutcome
 
 
-def _masks(data: HeteroData, val_start: int) -> tuple[torch.Tensor, torch.Tensor]:
-    train = data["tx"].train_mask
-    time = data["tx"].time
+def _masks(data: HeteroData, val_start: int, target: str) -> tuple[torch.Tensor, torch.Tensor]:
+    train = data[target].train_mask
+    time = data[target].time
     sub_train = train & (time < val_start)
     val = train & (time >= val_start)
     return sub_train, val
@@ -46,17 +46,18 @@ def train_hetero(
     patience: int = 20,
     seed: int = 42,
     val_start: int = 30,
+    target: str = "tx",
 ) -> TrainOutcome:
-    """Train HeteroGNN and return tx-test metrics (threshold chosen on temporal val)."""
+    """Train HeteroGNN on ``target`` nodes; return test metrics (threshold on val)."""
     torch.manual_seed(seed)
     data = T.ToUndirected(merge=False)(data)
 
-    sub_train, val = _masks(data, val_start)
-    y = data["tx"].y
+    sub_train, val = _masks(data, val_start, target)
+    y = data[target].y
     x_dict = data.x_dict
     edge_index_dict = data.edge_index_dict
 
-    model = HeteroGNN(data.metadata(), hidden_dim=hidden_dim, dropout=dropout)
+    model = HeteroGNN(data.metadata(), hidden_dim=hidden_dim, dropout=dropout, target=target)
     with torch.no_grad():  # materialize lazy parameters before the optimizer sees them
         model(x_dict, edge_index_dict)
     optimizer = torch.optim.Adam(model.parameters(), lr=lr, weight_decay=weight_decay)
@@ -91,9 +92,10 @@ def train_hetero(
     model.load_state_dict(best_state)
     prob = positive_prob()
     threshold = best_f1_threshold(y_val, prob[val].cpu().numpy())
+    test_mask = data[target].test_mask
     metrics = evaluate_binary(
-        y[data["tx"].test_mask].cpu().numpy(),
-        prob[data["tx"].test_mask].cpu().numpy(),
+        y[test_mask].cpu().numpy(),
+        prob[test_mask].cpu().numpy(),
         threshold,
     )
     return TrainOutcome(

@@ -37,3 +37,23 @@ def plot_baseline_metrics(
     fig.tight_layout()
     fig.savefig(path, dpi=130)
     plt.close(fig)
+
+
+def plot_temporal_backtest(
+    steps: list[int], praucs: list[float], path: str | Path, aggregate: float | None = None
+) -> None:
+    """PR-AUC per test time step - shows how a temporal model degrades over the horizon."""
+    fig, ax = plt.subplots(figsize=(8, 4))
+    ax.plot(steps, praucs, marker="o", ms=4, color="#4361ee", label="per-step PR-AUC")
+    if aggregate is not None:
+        ax.axhline(aggregate, ls="--", lw=1, color="#e76f51", label=f"aggregate {aggregate:.3f}")
+    ax.axvline(43, ls=":", lw=1, color="#6c757d")
+    ax.text(43.2, 0.02, "dark-market shutdown ~43", fontsize=8, color="#6c757d")
+    ax.set_xlabel("test time step")
+    ax.set_ylabel("PR-AUC")
+    ax.set_ylim(0, 1)
+    ax.set_title("EvolveGCN-O: rolling per-time-step test PR-AUC")
+    ax.legend()
+    fig.tight_layout()
+    fig.savefig(path, dpi=130)
+    plt.close(fig)

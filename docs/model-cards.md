@@ -58,6 +58,23 @@ XGBoost baseline yet.
   learns (train loss falls) but does not generalize across the temporal shift - not
   a bug. Fairer comparison (rolling protocol) is queued.
 
+### EvolveGCN-O rolling backtest (fair shot)
+- **Setup**: fuller training budget + per-time-step rolling evaluation
+  (`gnn-fraud backtest-temporal`).
+- **Result**: aggregate PR-AUC 0.100 (up from 0.069), but the per-step breakdown
+  shows a collapse at the dark-market shutdown (steps 44-46: ~0.01). Even fairly
+  evaluated, the temporal model cannot handle the regime change. Reported with the
+  per-step figure so the failure is visible, not averaged away.
+
+### Heterogeneous SAGE, address target (Elliptic++) - a different task
+- **Input**: same HeteroData; target is the **address** node type; addresses split
+  by first-seen time step (train 172,903 / test 92,451 labeled; 5.4% illicit).
+- **Result**: PR-AUC **0.456**, F1 0.529 - detects illicit *actors* (wallets), not
+  just transactions. Same model, different node type, no architecture change.
+- **Reproduce**: `gnn-fraud train-hetero --target addr`.
+- **Note**: not directly comparable to the tx numbers (different task/test set); the
+  value is showing one schema-parameterized model serving both node types.
+
 ### Heterogeneous SAGE (Elliptic++) - the positive result
 - **Input**: HeteroData with `tx` + `addr` nodes and four relations (tx-tx, addr-tx,
   tx-addr, addr-addr); `HeteroConv` with one SAGEConv per relation; features cleaned

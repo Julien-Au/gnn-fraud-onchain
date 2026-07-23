@@ -81,7 +81,7 @@ def _collect(
     return torch.cat(ys).cpu().numpy(), torch.cat(probs).cpu().numpy()
 
 
-def train_evolvegcn(
+def fit_evolvegcn(
     data: Data,
     timesteps: NDArray[Any],
     hidden_dim: int = 64,
@@ -92,8 +92,13 @@ def train_evolvegcn(
     patience: int = 20,
     seed: int = 42,
     val_start: int = 30,
-) -> TrainOutcome:
-    """Train EvolveGCN-O and return test metrics (threshold chosen on temporal val)."""
+) -> tuple[EvolveGCN, list[Snapshot], TrainOutcome]:
+    """Train EvolveGCN-O; return the fitted model, its snapshots, and test metrics.
+
+    Loss is applied on train time steps ``< val_start``; ``[val_start, 34]`` is the
+    temporal validation slice. Raising ``val_start`` toward 34 gives the model a
+    fuller training budget (the "rolling" setup, closer to the static GNNs' budget).
+    """
     torch.manual_seed(seed)
     snapshots = build_snapshots(data, timesteps)
 
@@ -138,9 +143,62 @@ def train_evolvegcn(
     threshold = best_f1_threshold(y_val, p_val)
     y_test, p_test = _collect(model, snapshots, TRAIN_MAX_TIMESTEP + 1, NUM_TIMESTEPS)
     metrics = evaluate_binary(y_test, p_test, threshold)
-    return TrainOutcome(
+    outcome = TrainOutcome(
         metrics=metrics,
         best_epoch=best_epoch,
         best_val_pr_auc=float(best_val),
         threshold=float(threshold),
     )
+    return model, snapshots, outcome
+
+
+def train_evolvegcn(
+    data: Data,
+    timesteps: NDArray[Any],
+    hidden_dim: int = 64,
+    dropout: float = 0.5,
+    lr: float = 0.01,
+    weight_decay: float = 5e-4,
+    epochs: int = 200,
+    patience: int = 20,
+    seed: int = 42,
+    val_start: int = 30,
+) -> TrainOutcome:
+    """Train EvolveGCN-O and return test metrics (threshold chosen on temporal val)."""
+    _, _, outcome = fit_evolvegcn(
+        data,
+        timesteps,
+        hidden_dim=hidden_dim,
+        dropout=dropout,
+        lr=lr,
+        weight_decay=weight_decay,
+        epochs=epochs,
+        patience=patience,
+        seed=seed,
+        val_start=val_start,
+    )
+    return outcome
+
+
+def per_timestep_prauc(
+    model: EvolveGCN, snapshots: list[Snapshot], lo: int, hi: int
+) -> list[tuple[int, int, float]]:
+    """PR-AUC per time step in [lo, hi] (rolling one-step-ahead backtest).
+
+    Returns (time_step, num_illicit, pr_auc) for each step that has both classes.
+    Weights evolve through the whole sequence; each step is scored with weights
+    evolved up to it - the model never sees a step's labels.
+    """
+    model.eval()
+    model.reset_state()
+    out: list[tuple[int, int, float]] = []
+    with torch.no_grad():
+        for s in snapshots:
+            logits = model(s.x, s.edge_index)
+            if lo <= s.t <= hi and bool(s.labeled.any()):
+                y = s.y[s.labeled].cpu().numpy()
+                p = logits.softmax(dim=1)[s.labeled, 1].cpu().numpy()
+                n_illicit = int((y == 1).sum())
+                if 0 < n_illicit < len(y):  # PR-AUC needs both classes
+                    out.append((s.t, n_illicit, float(evaluate_binary(y, p).pr_auc)))
+    return out

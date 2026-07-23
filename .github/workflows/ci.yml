@@ -53,3 +53,13 @@ jobs:
         run: uv run --extra gnn pytest
       - name: Smoke train (1 epoch on a tiny subgraph)
         run: uv run --extra gnn gnn-fraud smoke-train
+
+  docker:
+    name: Docker smoke (core image)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build the core image
+        run: docker build -t gnn-fraud:smoke .
+      - name: Run the CLI in the image
+        run: docker run --rm gnn-fraud:smoke info

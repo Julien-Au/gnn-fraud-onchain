@@ -30,6 +30,17 @@ def _synthetic_hetero() -> HeteroData:
     data["tx"].train_mask = labeled & (time <= 34)
     data["tx"].test_mask = labeled & (time > 34)
     data["addr"].x = torch.randn(n_addr, 5)
+    addr_y = torch.full((n_addr,), -1, dtype=torch.long)
+    addr_time = torch.tensor([(i % 40) + 1 for i in range(n_addr)], dtype=torch.long)
+    for i in range(n_addr):
+        if i % 2 == 0:
+            addr_y[i] = 1 if i % 6 == 0 else 0
+    data["addr"].x[addr_y == 1, 0] += 2.5
+    data["addr"].y = addr_y
+    data["addr"].time = addr_time
+    addr_labeled = addr_y >= 0
+    data["addr"].train_mask = addr_labeled & (addr_time <= 34)
+    data["addr"].test_mask = addr_labeled & (addr_time > 34)
 
     data["tx", "to", "tx"].edge_index = torch.randint(0, n_tx, (2, 120))
     data["addr", "to", "tx"].edge_index = torch.stack(
@@ -42,7 +53,10 @@ def _synthetic_hetero() -> HeteroData:
     return data
 
 
-def test_train_hetero_smoke() -> None:
-    out = train_hetero(_synthetic_hetero(), epochs=3, patience=3, seed=0, val_start=30)
+@pytest.mark.parametrize("target", ["tx", "addr"])
+def test_train_hetero_smoke(target: str) -> None:
+    out = train_hetero(
+        _synthetic_hetero(), epochs=3, patience=3, seed=0, val_start=30, target=target
+    )
     assert 0.0 <= out.metrics.pr_auc <= 1.0
     assert 0.0 <= out.metrics.f1 <= 1.0
