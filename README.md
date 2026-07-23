@@ -218,6 +218,26 @@ bash scripts/verify.sh --full   # also the torch/PyG smoke train
 uv run gnn-fraud info
 ```
 
+## Research findings (post-benchmark)
+
+Beyond the benchmark, a literature review ([`docs/sota-review.md`](docs/sota-review.md))
+and two experiments ([`docs/research-log.md`](docs/research-log.md)):
+
+- **Our honest results match the field's honest SOTA.** Under a strict temporal split
+  and illicit-class F1 - the only comparable setting - tree ensembles (~0.80) beat
+  GNNs by 10+ points, from Weber et al. 2019 to 2026. We reproduce that ordering.
+- **The reported "~0.9-0.98 SOTA" is largely a leakage artifact.** Trained under a
+  *random* split, our **identical GraphSAGE jumps from F1 0.43 to 0.86** (PR-AUC 0.49
+  -> 0.92) - squarely into the "SOTA" range - purely because the random split leaks
+  future time steps. Same model, +0.44 PR-AUC from the protocol alone.
+
+  ![leakage](docs/media/results/leakage.png)
+
+- **The post-time-step-43 collapse is the real open problem** and is unsolved by any
+  surveyed method under honest evaluation (our rolling backtest reproduces it). A
+  naive USAD-on-graph (GraphUSAD v1) fails the same way the plain autoencoder does -
+  ruling out the naive approach and pointing to explicit drift handling.
+
 ## Demo: score a real subgraph
 
 `gnn-fraud demo` trains GraphSAGE on Elliptic, focuses on a test-period time step,

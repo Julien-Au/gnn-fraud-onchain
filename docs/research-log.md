@@ -40,3 +40,34 @@ the naive approach and sharpens the direction:
 - A **discriminative** shift-robust objective instead of reconstruction.
 - Positioning vs the literature (is USAD-on-graph already published? what do
   shift-aware graph fraud methods report?) - pending the deep-research report.
+
+---
+
+## Exp 2 - Leakage demonstration (temporal vs random split): POSITIVE
+
+**Hypothesis.** The literature's near-perfect Elliptic numbers (~0.85-0.98) come
+mostly from evaluation leakage (random splits that leak future time steps), not from
+better models. If so, the *same* model should look near-SOTA under a random split
+and mediocre under the honest temporal split.
+
+**Setup.** `experiments/leakage.py` (`gnn-fraud leakage --model sage`). The exact
+same GraphSAGE, trained/evaluated under (a) the honest temporal split (train steps
+1-34 / test 35-49) and (b) a stratified random split of the labeled nodes. Seed 42.
+
+**Result (confirmed):**
+| Split | PR-AUC | F1 (illicit) | ROC-AUC |
+|---|---|---|---|
+| Temporal (honest) | 0.488 | 0.429 | 0.877 |
+| **Random (leaky)** | **0.925** | **0.857** | 0.983 |
+
+**+0.437 PR-AUC and F1 0.43 -> 0.86 from the split alone.** Under the random split
+our vanilla GraphSAGE lands at F1 0.857 - squarely inside the "SOTA" range reported
+by papers that use random/stratified splits - while the identical model scores 0.43
+under honest temporal evaluation. This independently reproduces, on our own code, the
+inflation the SOTA review flagged: the high numbers are a protocol artifact.
+
+**Why this matters (Path A contribution).** This is a clean, self-contained,
+reproducible demonstration for a leakage-free re-evaluation / benchmark contribution:
+"report illicit-class F1 under a strict temporal split, or you are measuring
+leakage." It also fixes the honest baseline the drift-robust method (Path B) must
+improve: PR-AUC 0.488 (SAGE) / 0.799 (XGBoost) under temporal evaluation.

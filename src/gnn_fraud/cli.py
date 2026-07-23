@@ -428,6 +428,62 @@ def train_graph_usad(
 
 
 @app.command()
+def leakage(
+    root: str = "data/raw/elliptic",
+    model: str = "sage",
+    results_path: str = "docs/results/leakage.json",
+    seed: int = 42,
+) -> None:
+    """Demonstrate SOTA inflation: same GNN under the honest temporal vs a leaky random split.
+
+    Requires the ``gnn`` extra.
+    """
+    import json
+    from pathlib import Path
+
+    from gnn_fraud.experiments.leakage import run_leakage_experiment
+    from gnn_fraud.ingestion.elliptic import load_elliptic, node_timesteps
+    from gnn_fraud.viz.results import plot_baseline_metrics
+
+    data = load_elliptic(root)
+    timesteps = node_timesteps(root)
+    console.print(f"[bold]Leakage experiment ({model}): temporal vs random split...[/bold]")
+    res = run_leakage_experiment(data, timesteps, model, seed=seed)
+
+    table = Table(title=f"Same {model}: honest temporal vs leaky random split")
+    for col in ("split", "PR-AUC", "ROC-AUC", "F1", "precision", "recall"):
+        table.add_column(col, justify="right" if col != "split" else "left")
+    for name in ("temporal", "random"):
+        r = res[name]
+        label = "temporal (honest)" if name == "temporal" else "random (leaky)"
+        table.add_row(
+            label,
+            f"{r['pr_auc']:.4f}",
+            f"{r['roc_auc']:.4f}",
+            f"{r['f1']:.4f}",
+            f"{r['precision']:.4f}",
+            f"{r['recall']:.4f}",
+        )
+    console.print(table)
+    lift = res["random"]["pr_auc"] - res["temporal"]["pr_auc"]
+    console.print(
+        f"[bold red]Leakage inflation: +{lift:.3f} PR-AUC from the random split alone.[/bold red]"
+    )
+
+    out_path = Path(results_path)
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    out_path.write_text(json.dumps(res, indent=2) + "\n", encoding="utf-8")
+    fig_path = Path("docs/media/results/leakage.png")
+    fig_path.parent.mkdir(parents=True, exist_ok=True)
+    plot_baseline_metrics(
+        {"temporal (honest)": res["temporal"], "random (leaky)": res["random"]},
+        fig_path,
+        title=f"SOTA inflation by future leakage (same {model})",
+    )
+    console.print(f"Saved to {out_path} and {fig_path}")
+
+
+@app.command()
 def smoke_train() -> None:
     """Run a tiny 1-epoch smoke train (requires the ``gnn`` extra).
 
