@@ -394,6 +394,40 @@ def demo(
 
 
 @app.command()
+def train_graph_usad(
+    root: str = "data/raw/elliptic",
+    results_path: str = "docs/results/graph_usad.json",
+    epochs: int = 100,
+    seed: int = 42,
+) -> None:
+    """Train GraphUSAD (research: USAD-style adversarial graph autoencoder).
+
+    Unsupervised on licit nodes; evaluates illicit detection on the temporal test.
+    Requires the ``gnn`` extra.
+    """
+    import json
+    from pathlib import Path
+
+    from gnn_fraud.ingestion.elliptic import load_elliptic, node_timesteps
+    from gnn_fraud.train.graph_usad_trainer import train_graph_usad as run_usad
+
+    data = load_elliptic(root)
+    timesteps = node_timesteps(root)
+    console.print("[bold]Training GraphUSAD (unsupervised, adversarial)...[/bold]")
+    out = run_usad(data, timesteps, epochs=epochs, seed=seed)
+    console.print(
+        f"  graph-usad: PR-AUC={out.metrics.pr_auc:.4f} ROC-AUC={out.metrics.roc_auc:.4f} "
+        f"F1={out.metrics.f1:.4f} (best epoch {out.best_epoch}, val PR-AUC {out.best_val_pr_auc:.4f})"
+    )
+    out_path = Path(results_path)
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    out_path.write_text(
+        json.dumps({"graph-usad": out.metrics.as_row()}, indent=2) + "\n", encoding="utf-8"
+    )
+    console.print(f"Saved result to {out_path}")
+
+
+@app.command()
 def smoke_train() -> None:
     """Run a tiny 1-epoch smoke train (requires the ``gnn`` extra).
 
