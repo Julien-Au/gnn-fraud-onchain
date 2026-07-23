@@ -46,23 +46,43 @@ Adds an 822,942-address actor task + augmented features. Its own best model is a
 **Random Forest with feature refinement** (transactions 98.6%P / 72.7%R; actors
 92.1%P / 80.2%R, under a temporal 70/30 split), beating MLP/XGBoost/LSTM/LR.
 
-## 5. Novelty of "USAD-on-graph" (under-explored, not proven absent)
+## 5. Novelty of "USAD-on-graph" (NOVEL - dedicated search done)
 
-The surveyed graph-fraud literature makes **no use of USAD or its two-decoder
-adversarial autoencoder**; dynamic/temporal graph anomaly detection is listed as
-future work. This supports "USAD-on-graph targeting temporal drift" as a **genuine,
-under-explored gap** - but the verified claim set did **not** include a dedicated
-citation-graph search of USAD-citing works or a systematic sweep of adversarial
-graph autoencoders (DOMINANT, AnomalyDAE, CoLA, adversarial GAE/VGAE). **Before any
-novelty claim in a paper, that dedicated search is required.**
+A dedicated citation / graph-anomaly search (a second verified review) concludes:
+**adapting USAD's specific two-decoder adversarial min-max reconstruction game to a
+GNN encoder is novel.** USAD appears in graph papers only as a *time-series* baseline;
+no published method uses its twin-decoder (AE1/AE2) adversarial reconstruction on a
+shared graph encoder. The field splits into separate lineages, none USAD-style:
 
-## 6. Still open (not answered by the verified set)
+- **Reconstruction GAEs** (non-adversarial): DOMINANT, AnomalyDAE, GAD-NR, GRASPED, ADA-GAD.
+- **Generative GAN-style** (generator/discriminator on representations): GAAN, AEGIS.
+- **One-class / pseudo-anomaly**: GGAD (NeurIPS'24), TAM, OCGNN.
+- **Adversarially-regularized VGAEs** (latent-space discriminator): ARGA/ARVGA, and the
+  **single closest work** - *"Adversarial variational graph autoencoder with contrastive
+  learning"* (Journal of Big Data, 2025, CC-BY 4.0): same design space but adversarial in
+  the **latent embedding** distribution + DOMINANT-style dual reconstruction, **not**
+  USAD's two-decoder reconstruction game.
 
-- Complementary benchmark datasets (Ethereum phishing, AMLSim/AMLworld, DGraph-Fin,
-  YelpChi/Amazon) with counts/labels/licenses - unanswered; needs a targeted pass.
-- A conclusive USAD-novelty citation search (Semantic Scholar / citing-works).
-- Whether the "graph structure is a liability under shift" finding replicates (its
-  specific magnitudes were refuted in verification; treat as a hypothesis).
+Positioning bonus: USAD is explicitly motivated by **training stability over GANs**, so a
+USAD-on-graph is differentiated from GAAN/AEGIS on that axis too. (Caveat: a brand-new
+un-indexed 2025-26 preprint could exist; the claim is scoped to the surveyed literature.)
+
+## 6. Complementary datasets for a temporal-shift multi-dataset study
+
+| Dataset | Nodes / edges | Type | Labels (base rate) | Temporal? | Access |
+|---|---|---|---|---|---|
+| **DGraph-Fin** | 3.70M / 4.30M | homogeneous | 15,509 fraud / 1.21M normal (~1.3%) | **Yes** (timestamped edges) | NeurIPS'22 track |
+| **IBM AMLworld** | synthetic tx graphs | tx graph | full ground truth (AML) | **Yes** (timestamped) | Kaggle (synthetic) |
+| Ethereum MulDiGraph (XBlock) | 2.97M / 13.55M | directed multigraph | 1,165 phishing (~0.04%) | coarse | XBlock |
+| YelpChi / Amazon | ~45K / ~11K | heterogeneous | ~14.5% / ~9.5% | **No** (static) | CARE-GNN/PC-GNN |
+
+**Recommendation: DGraph-Fin and IBM AMLworld** best complement Elliptic (both permit a
+genuine temporal split); YelpChi/Amazon are static; MulDiGraph's temporal signal is coarse.
+
+## 7. Still-hypothesis (flagged honestly)
+
+- Whether "graph structure is a liability under shift" replicates - specific magnitudes
+  were refuted in verification; treat as a hypothesis, not a result.
 
 ## Sources
 
