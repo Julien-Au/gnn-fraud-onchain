@@ -399,10 +399,12 @@ def train_graph_usad(
     results_path: str = "docs/results/graph_usad.json",
     epochs: int = 100,
     seed: int = 42,
+    normal_recent: int = -1,
 ) -> None:
     """Train GraphUSAD (research: USAD-style adversarial graph autoencoder).
 
     Unsupervised on licit nodes; evaluates illicit detection on the temporal test.
+    Pass --normal-recent N for the drift-aware v2 (normal = latest N train steps).
     Requires the ``gnn`` extra.
     """
     import json
@@ -413,8 +415,10 @@ def train_graph_usad(
 
     data = load_elliptic(root)
     timesteps = node_timesteps(root)
-    console.print("[bold]Training GraphUSAD (unsupervised, adversarial)...[/bold]")
-    out = run_usad(data, timesteps, epochs=epochs, seed=seed)
+    recent = None if normal_recent < 0 else normal_recent
+    tag = "v2 drift-aware" if recent else "v1"
+    console.print(f"[bold]Training GraphUSAD ({tag}, unsupervised, adversarial)...[/bold]")
+    out = run_usad(data, timesteps, epochs=epochs, seed=seed, normal_recent_steps=recent)
     console.print(
         f"  graph-usad: PR-AUC={out.metrics.pr_auc:.4f} ROC-AUC={out.metrics.roc_auc:.4f} "
         f"F1={out.metrics.f1:.4f} (best epoch {out.best_epoch}, val PR-AUC {out.best_val_pr_auc:.4f})"

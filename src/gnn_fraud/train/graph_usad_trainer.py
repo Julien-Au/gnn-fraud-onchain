@@ -51,12 +51,22 @@ def train_graph_usad(
     val_start: int = 30,
     alpha: float = 0.5,
     beta: float = 0.5,
+    normal_recent_steps: int | None = None,
 ) -> TrainOutcome:
-    """Train GraphUSAD unsupervised; evaluate illicit detection on the temporal test."""
+    """Train GraphUSAD unsupervised; evaluate illicit detection on the temporal test.
+
+    ``normal_recent_steps`` (drift-aware v2): if set, the "normal" set uses only the
+    latest N train time steps (a rolling window that tracks the drifting normal),
+    instead of all early steps. This directly targets v1's failure mode, where the
+    reconstruction error tracked the licit distribution's drift rather than illicitness.
+    """
     torch.manual_seed(seed)
     sub_train, val = temporal_val_masks(data, timesteps, val_start=val_start)
     y = data.y
     normal = sub_train & (y == 0)  # train on licit (normal) nodes only
+    if normal_recent_steps is not None:
+        ts = torch.as_tensor(timesteps)
+        normal = normal & (ts >= (val_start - normal_recent_steps))
 
     model = GraphUSAD(int(data.num_node_features), hidden_dim=hidden_dim, latent_dim=latent_dim)
     gen_params = (

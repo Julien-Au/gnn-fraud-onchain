@@ -71,3 +71,32 @@ reproducible demonstration for a leakage-free re-evaluation / benchmark contribu
 "report illicit-class F1 under a strict temporal split, or you are measuring
 leakage." It also fixes the honest baseline the drift-robust method (Path B) must
 improve: PR-AUC 0.488 (SAGE) / 0.799 (XGBoost) under temporal evaluation.
+
+---
+
+## Exp 3 - GraphUSAD v2 (drift-aware rolling normal): NEGATIVE
+
+**Hypothesis.** v1 failed because reconstruction error tracked the licit
+distribution's *drift* rather than illicitness. Training the "normal" on only the
+**latest** train time steps (a rolling window closer to the test period) should fix
+the anti-correlation.
+
+**Setup.** `train-graph-usad --normal-recent 5` (normal = train steps 25-29 only).
+
+**Result.** PR-AUC **0.0367**, ROC-AUC 0.180 - **identical to v1** (0.0366). No
+improvement; same predict-all-positive collapse.
+
+**Conclusion.** The rolling-normal fix does **not** work. The problem is deeper than
+which normal window: under this regime-change shift, illicit test nodes reconstruct
+*better* than test-period licit nodes regardless of the normal set, so
+reconstruction error is the wrong signal. This rules out the simple drift-aware fix
+and, together with Exp 1, casts doubt on the whole reconstruction-based frame for
+this shift.
+
+**Honest reassessment.** Two negatives on the unsupervised USAD-on-graph angle. It is
+*novel* but not *working* on Elliptic. The next distinct hypotheses would be (a) a
+time-domain-invariant representation (adversarially remove the time-period signal so
+reconstruction reflects abnormality, not drift), or (b) abandoning reconstruction for
+a drift-robust *supervised* method targeting the post-t43 window (supervised models
+already dominate: XGBoost 0.80 vs any AE ~0.04). The solid, low-risk contribution
+remains the leakage-free benchmark (Exp 2 + the SOTA review).
