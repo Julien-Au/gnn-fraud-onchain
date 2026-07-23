@@ -203,3 +203,33 @@ rsynced), retrieved results, destroyed the box.
 
 **Next.** Step 5 - fair rolling temporal eval; address-level classification on the
 same graph; the short USAD->GNN write-up and a demo.
+
+---
+
+## Step 5 - Final deliverables (write-up, model cards, demo)
+
+**Plan.** Complete the brief's stated deliverables that use existing results (no new
+training runs): the research write-up, model cards, and a demo.
+
+**Implemented.**
+- `docs/from-usad-to-gnns.md`: the full narrative from USAD to relational GNNs, with
+  the measured results arc and the relational-foundation-model bridge.
+- `docs/model-cards.md`: one card per model (intent, inputs, metrics, limitations).
+- `demo.py` + `cli demo`: trains GraphSAGE, scores a test-period subgraph around a
+  real illicit transaction, renders it (nodes colored by predicted illicit
+  probability, true-illicit outlined), prints the top flagged transactions.
+  Refactored `gnn_trainer` to expose `fit_gnn` (returns the fitted model) so the
+  demo reuses the real training path. Pure helper `pick_demo_timestep` unit-tested.
+- README: demo section + figure + links to the write-up, model cards, quiz.
+
+**Real demo output.** Auto-picked time step 42 (7,140 tx, 239 illicit, just before
+the dark-market shutdown); rendered `docs/media/demo/subgraph.png`.
+
+**Self-review (adversarial).** No new numbers invented; the write-up/cards quote the
+already-measured results. Demo shows real model scores and true labels (top flags
+are mostly "unknown", reported honestly, since 77% of nodes are unlabeled).
+
+**Gate.** Fast gate green; demo run produced a real figure.
+
+**Next (optional extras, not required deliverables).** Fair rolling temporal eval
+(EvolveGCN's fair shot); address-level classification on the same hetero graph.

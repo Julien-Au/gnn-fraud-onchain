@@ -71,7 +71,7 @@ def _positive_prob(model: torch.nn.Module, data: Data) -> torch.Tensor:
         return logits.softmax(dim=1)[:, 1]
 
 
-def train_gnn(
+def fit_gnn(
     data: Data,
     timesteps: NDArray[Any],
     model_name: str,
@@ -83,8 +83,8 @@ def train_gnn(
     patience: int = 20,
     seed: int = 42,
     val_start: int = 30,
-) -> TrainOutcome:
-    """Train one GNN and return test metrics (threshold chosen on temporal val)."""
+) -> tuple[torch.nn.Module, TrainOutcome]:
+    """Train one GNN; return the fitted model and its test metrics."""
     torch.manual_seed(seed)
     sub_train, val = temporal_val_masks(data, timesteps, val_start=val_start)
     y = data.y
@@ -130,9 +130,40 @@ def train_gnn(
         prob[data.test_mask].cpu().numpy(),
         threshold,
     )
-    return TrainOutcome(
+    outcome = TrainOutcome(
         metrics=metrics,
         best_epoch=best_epoch,
         best_val_pr_auc=float(best_val),
         threshold=float(threshold),
     )
+    return model, outcome
+
+
+def train_gnn(
+    data: Data,
+    timesteps: NDArray[Any],
+    model_name: str,
+    hidden_dim: int = 64,
+    dropout: float = 0.5,
+    lr: float = 0.01,
+    weight_decay: float = 5e-4,
+    epochs: int = 200,
+    patience: int = 20,
+    seed: int = 42,
+    val_start: int = 30,
+) -> TrainOutcome:
+    """Train one GNN and return test metrics (threshold chosen on temporal val)."""
+    _, outcome = fit_gnn(
+        data,
+        timesteps,
+        model_name,
+        hidden_dim=hidden_dim,
+        dropout=dropout,
+        lr=lr,
+        weight_decay=weight_decay,
+        epochs=epochs,
+        patience=patience,
+        seed=seed,
+        val_start=val_start,
+    )
+    return outcome

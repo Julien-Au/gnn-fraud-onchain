@@ -301,6 +301,38 @@ def train_hetero(
 
 
 @app.command()
+def demo(
+    root: str = "data/raw/elliptic",
+    timestep: int = -1,
+    epochs: int = 60,
+    top_k: int = 10,
+    out: str = "docs/media/demo/subgraph.png",
+    seed: int = 42,
+) -> None:
+    """Score a real Elliptic subgraph with a trained GraphSAGE and render it.
+
+    Requires the ``gnn`` extra. Pass --timestep to fix the time step (default: the
+    test-period step with the most illicit transactions).
+    """
+    from gnn_fraud.demo import run_demo
+
+    console.print("[bold]Training GraphSAGE for the demo (~1 min)...[/bold]")
+    summary = run_demo(root, None if timestep < 0 else timestep, epochs, top_k, out, seed)
+    console.print(
+        f"Time step {summary['timestep']}: {summary['num_nodes']:,} transactions, "
+        f"{summary['num_illicit']} truly illicit."
+    )
+    table = Table(title=f"Top {top_k} flagged transactions (time step {summary['timestep']})")
+    table.add_column("rank")
+    table.add_column("illicit score", justify="right")
+    table.add_column("true label")
+    for rank, row in enumerate(summary["top"], 1):
+        table.add_row(str(rank), f"{row['score']:.4f}", row["true"])
+    console.print(table)
+    console.print(f"Saved subgraph figure to {summary['figure']}")
+
+
+@app.command()
 def smoke_train() -> None:
     """Run a tiny 1-epoch smoke train (requires the ``gnn`` extra).
 

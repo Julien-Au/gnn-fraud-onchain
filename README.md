@@ -31,7 +31,7 @@ imbalance (PR-AUC, minority-class F1).
 | 2 | Baselines: LogReg / XGBoost + an unsupervised autoencoder (USAD nod) | done |
 | 3 | GNNs: GCN -> GraphSAGE -> GAT (transductive) | done |
 | 4 | Heterogeneous graph (Elliptic++) + relational-foundation-model framing | done |
-| 5 | Rigorous evaluation, experiment tracking, demo (CLI / Streamlit) | todo |
+| 5 | Write-up, model cards, demo (CLI subgraph scorer) | done |
 
 ## Data
 
@@ -200,6 +200,30 @@ bash scripts/verify.sh --full   # also the torch/PyG smoke train
 # 3. Explore the CLI:
 uv run gnn-fraud info
 ```
+
+## Demo: score a real subgraph
+
+`gnn-fraud demo` trains GraphSAGE on Elliptic, focuses on a test-period time step,
+and renders a neighborhood around a genuinely illicit transaction - nodes colored
+by the model's predicted illicit probability, truly-illicit nodes outlined in red.
+It also prints the top flagged transactions. Everything shown is real (model,
+scores, labels).
+
+```bash
+uv run --extra gnn gnn-fraud demo            # auto-picks the busiest illicit time step
+uv run --extra gnn gnn-fraud demo --timestep 42
+```
+
+![demo subgraph](docs/media/demo/subgraph.png)
+
+## Further reading
+
+- [`docs/from-usad-to-gnns.md`](docs/from-usad-to-gnns.md) - the research narrative
+  from USAD (KDD 2020) to relational graph learning, with the honest results arc.
+- [`docs/model-cards.md`](docs/model-cards.md) - one card per model, with metrics,
+  intent, and limitations.
+- [`docs/interview-quiz.md`](docs/interview-quiz.md) - accumulated study questions
+  with answer keys.
 
 ## Reproducibility & engineering
 
