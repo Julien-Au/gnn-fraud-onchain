@@ -220,8 +220,11 @@ uv run gnn-fraud info
 
 ## Research findings (post-benchmark)
 
-Beyond the benchmark, a literature review ([`docs/sota-review.md`](docs/sota-review.md))
-and two experiments ([`docs/research-log.md`](docs/research-log.md)):
+Beyond the benchmark: a verified literature review
+([`docs/sota-review.md`](docs/sota-review.md)), an experiment log
+([`docs/research-log.md`](docs/research-log.md)), and a consolidated write-up draft
+([`docs/paper-draft.md`](docs/paper-draft.md) - *"The Elliptic SOTA is a Leakage
+Mirage"*):
 
 - **Our honest results match the field's honest SOTA.** Under a strict temporal split
   and illicit-class F1 - the only comparable setting - tree ensembles (~0.80) beat
