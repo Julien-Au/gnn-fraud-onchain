@@ -100,3 +100,45 @@ reconstruction reflects abnormality, not drift), or (b) abandoning reconstructio
 a drift-robust *supervised* method targeting the post-t43 window (supervised models
 already dominate: XGBoost 0.80 vs any AE ~0.04). The solid, low-risk contribution
 remains the leakage-free benchmark (Exp 2 + the SOTA review).
+
+---
+
+## Exp 4 - Multi-model leakage benchmark (C1 consolidated): STRONG
+
+**Setup.** `gnn-fraud leakage-multi`: GCN, GraphSAGE, GAT and XGBoost, each under the
+honest temporal split vs a stratified random split (same model, only the split differs).
+
+**Result (PR-AUC / illicit-F1 under random split):**
+| Model | Temporal PR-AUC | Random PR-AUC | Inflation | Random F1 |
+|---|---|---|---|---|
+| GCN | 0.294 | 0.800 | +0.506 | 0.736 |
+| GraphSAGE | 0.488 | 0.925 | +0.437 | 0.865 |
+| GAT | 0.332 | 0.811 | +0.479 | 0.757 |
+| XGBoost | 0.790 | **0.987** | +0.197 | **0.955** |
+
+**Every model reaches "SOTA-looking" numbers under the leaky random split** - XGBoost
+hits PR-AUC 0.987 / F1 0.955, exactly the reported "~0.98 SOTA", and collapses to 0.79
+under honest temporal evaluation. This is a clean, self-contained benchmark result:
+the near-perfect Elliptic numbers in the literature are reproducible by ANY model
+through leakage. **GNNs inflate more (+0.44-0.51) than XGBoost (+0.20)** - a double
+leak: the random split leaks labels *and* lets message passing cross the train/test
+boundary. This is the core Path-A (C1) contribution.
+
+## Exp 5 - GraphUSAD v3 (domain-adversarial, time-invariant): NEGATIVE
+
+**Hypothesis.** Make the latent time-INVARIANT via a gradient-reversal domain
+classifier (train-period vs later), so reconstruction error reflects abnormality, not
+drift - the principled fix for v1/v2's failure.
+
+**Setup.** `train-graph-usad-dann` (DANN-style GRL + time-period head, 1/n... lambda ramp).
+
+**Result.** PR-AUC **0.0367**, ROC-AUC 0.181, best epoch 0 - **identical to v1/v2**.
+Time-invariance does not help either.
+
+**Conclusion (definitive for the unsupervised angle).** Three principled variants -
+naive (Exp 1), rolling-normal (Exp 3), domain-adversarial (Exp 5) - all fail
+identically. The reconstruction-based unsupervised frame is the wrong tool for this
+regime-change shift, full stop. USAD-on-graph is *novel* but does not work on Elliptic.
+This is an honest negative result. The consolidated, defensible contribution is the
+leakage-free benchmark (Exp 2 + Exp 4 + the SOTA review): a reality check showing the
+reported Elliptic SOTA is a leakage artifact.

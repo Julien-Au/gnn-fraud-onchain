@@ -40,3 +40,12 @@ def test_train_graph_usad_smoke() -> None:
     out = train_graph_usad(data, ts, epochs=5, patience=5, seed=0, val_start=30)
     assert 0.0 <= out.metrics.pr_auc <= 1.0
     assert 0.0 <= out.metrics.roc_auc <= 1.0
+
+
+def test_train_graph_usad_dann_smoke() -> None:
+    from gnn_fraud.train.graph_usad_dann_trainer import train_graph_usad_dann
+
+    data, ts = _synthetic()
+    out = train_graph_usad_dann(data, ts, epochs=5, patience=5, seed=0, val_start=30)
+    assert 0.0 <= out.metrics.pr_auc <= 1.0
+    assert 0.0 <= out.metrics.roc_auc <= 1.0

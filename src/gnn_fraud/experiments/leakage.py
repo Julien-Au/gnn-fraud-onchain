@@ -111,3 +111,69 @@ def run_leakage_experiment(
     train_m, val_m, test_m = random_masks(data.y, seed=seed)
     random_split = _fit_with_masks(data, model_name, train_m, val_m, test_m, seed=seed)
     return {"temporal": temporal.as_row(), "random": random_split.as_row()}
+
+
+def _xgb_with_masks(
+    data: Data,
+    train_mask: torch.Tensor,
+    val_mask: torch.Tensor,
+    test_mask: torch.Tensor,
+    seed: int = 42,
+) -> BinaryMetrics:
+    """XGBoost on node features with arbitrary train/val/test masks (threshold on val)."""
+    from sklearn.preprocessing import StandardScaler
+    from xgboost import XGBClassifier
+
+    x = data.x.cpu().numpy()
+    y = data.y.cpu().numpy()
+    tr, va, te = train_mask.cpu().numpy(), val_mask.cpu().numpy(), test_mask.cpu().numpy()
+    scaler = StandardScaler().fit(x[tr])
+    pos, neg = int((y[tr] == 1).sum()), int((y[tr] == 0).sum())
+    xgb = XGBClassifier(
+        n_estimators=300,
+        max_depth=6,
+        learning_rate=0.1,
+        subsample=0.9,
+        colsample_bytree=0.9,
+        scale_pos_weight=(neg / pos) if pos else 1.0,
+        eval_metric="aucpr",
+        random_state=seed,
+        n_jobs=4,
+    )
+    xgb.fit(scaler.transform(x[tr]), y[tr])
+    s_va = xgb.predict_proba(scaler.transform(x[va]))[:, 1]
+    s_te = xgb.predict_proba(scaler.transform(x[te]))[:, 1]
+    thr = best_f1_threshold(y[va], s_va)
+    return evaluate_binary(y[te], s_te, thr)
+
+
+def run_leakage_multi(
+    data: Data,
+    timesteps: NDArray[Any],
+    models: tuple[str, ...] = ("gcn", "sage", "gat"),
+    seed: int = 42,
+    val_start: int = 30,
+) -> dict[str, dict[str, dict[str, float | int]]]:
+    """Multi-model leakage table: each model under the honest temporal vs a leaky random split.
+
+    Uses one trainer with different masks so the ONLY difference is the split.
+    """
+    ts = torch.as_tensor(np.asarray(timesteps))
+    t_train = data.train_mask & (ts < val_start)
+    t_val = data.train_mask & (ts >= val_start)
+    t_test = data.test_mask
+    r_train, r_val, r_test = random_masks(data.y, seed=seed)
+
+    out: dict[str, dict[str, dict[str, float | int]]] = {}
+    for m in models:
+        temporal = _fit_with_masks(data, m, t_train, t_val, t_test, seed=seed)
+        random_split = _fit_with_masks(data, m, r_train, r_val, r_test, seed=seed)
+        out[m] = {"temporal": temporal.as_row(), "random": random_split.as_row()}
+    try:
+        out["xgboost"] = {
+            "temporal": _xgb_with_masks(data, t_train, t_val, t_test, seed).as_row(),
+            "random": _xgb_with_masks(data, r_train, r_val, r_test, seed).as_row(),
+        }
+    except ImportError:
+        pass
+    return out

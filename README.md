@@ -226,12 +226,21 @@ and two experiments ([`docs/research-log.md`](docs/research-log.md)):
 - **Our honest results match the field's honest SOTA.** Under a strict temporal split
   and illicit-class F1 - the only comparable setting - tree ensembles (~0.80) beat
   GNNs by 10+ points, from Weber et al. 2019 to 2026. We reproduce that ordering.
-- **The reported "~0.9-0.98 SOTA" is largely a leakage artifact.** Trained under a
-  *random* split, our **identical GraphSAGE jumps from F1 0.43 to 0.86** (PR-AUC 0.49
-  -> 0.92) - squarely into the "SOTA" range - purely because the random split leaks
-  future time steps. Same model, +0.44 PR-AUC from the protocol alone.
+- **The reported "~0.9-0.98 SOTA" is largely a leakage artifact.** Under a *random*
+  split, **every model reaches "SOTA-looking" numbers** - XGBoost hits PR-AUC 0.987 /
+  F1 0.955 (exactly the reported ~0.98), GraphSAGE F1 0.86 - then collapses under the
+  honest temporal split. Same models, only the split changed. GNNs inflate *more*
+  (+0.44-0.51 PR-AUC) than XGBoost (+0.20): a double leak (labels **and** message
+  passing crossing the train/test boundary).
 
-  ![leakage](docs/media/results/leakage.png)
+  | Model | Temporal PR-AUC | Random PR-AUC | Inflation |
+  |---|---|---|---|
+  | GCN | 0.294 | 0.800 | +0.506 |
+  | GraphSAGE | 0.488 | 0.925 | +0.437 |
+  | GAT | 0.332 | 0.811 | +0.479 |
+  | XGBoost | 0.790 | **0.987** | +0.197 |
+
+  ![leakage](docs/media/results/leakage_multi.png)
 
 - **The post-time-step-43 collapse is the real open problem** and is unsolved by any
   surveyed method under honest evaluation (our rolling backtest reproduces it). A

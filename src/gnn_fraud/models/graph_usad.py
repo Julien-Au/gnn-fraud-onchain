@@ -15,6 +15,8 @@ shift - reported honestly whatever it scores.
 
 from __future__ import annotations
 
+from typing import Any
+
 import torch
 import torch.nn.functional as F
 from torch import nn
@@ -23,6 +25,35 @@ from torch_geometric.nn import SAGEConv
 
 def _mlp(in_dim: int, hidden: int, out_dim: int) -> nn.Sequential:
     return nn.Sequential(nn.Linear(in_dim, hidden), nn.ReLU(), nn.Linear(hidden, out_dim))
+
+
+class _GradReverse(torch.autograd.Function):
+    """Gradient reversal layer (DANN): identity forward, negated gradient backward."""
+
+    @staticmethod
+    def forward(ctx: Any, x: torch.Tensor, lambd: float) -> torch.Tensor:
+        ctx.lambd = lambd
+        return x.view_as(x)
+
+    @staticmethod
+    def backward(ctx: Any, grad_output: torch.Tensor) -> tuple[torch.Tensor, None]:
+        return -ctx.lambd * grad_output, None
+
+
+def grad_reverse(x: torch.Tensor, lambd: float = 1.0) -> torch.Tensor:
+    return _GradReverse.apply(x, lambd)
+
+
+class DomainHead(nn.Module):
+    """Predicts the time period (train vs later) from the latent - used with a GRL to
+    push the encoder toward a time-INVARIANT representation (v3, drift-robust)."""
+
+    def __init__(self, latent_dim: int, hidden: int = 32) -> None:
+        super().__init__()
+        self.net = _mlp(latent_dim, hidden, 2)
+
+    def forward(self, z: torch.Tensor, lambd: float = 1.0) -> torch.Tensor:
+        return self.net(grad_reverse(z, lambd))
 
 
 class GraphUSAD(nn.Module):

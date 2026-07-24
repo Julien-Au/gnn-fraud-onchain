@@ -488,6 +488,78 @@ def leakage(
 
 
 @app.command()
+def leakage_multi(
+    root: str = "data/raw/elliptic",
+    models: str = "gcn,sage,gat",
+    results_path: str = "docs/results/leakage_multi.json",
+    seed: int = 42,
+) -> None:
+    """Multi-model leakage table: each model under honest temporal vs leaky random split.
+
+    Requires the ``gnn`` extra (``boost`` adds the XGBoost row).
+    """
+    import json
+    from pathlib import Path
+
+    from gnn_fraud.experiments.leakage import run_leakage_multi
+    from gnn_fraud.ingestion.elliptic import load_elliptic, node_timesteps
+    from gnn_fraud.viz.results import plot_leakage_multi
+
+    data = load_elliptic(root)
+    timesteps = node_timesteps(root)
+    model_list = tuple(m.strip() for m in models.split(",") if m.strip())
+    console.print("[bold]Multi-model leakage: temporal vs random split...[/bold]")
+    res = run_leakage_multi(data, timesteps, models=model_list, seed=seed)
+
+    table = Table(title="PR-AUC: honest temporal vs leaky random split (same model)")
+    for col in ("model", "temporal", "random", "inflation"):
+        table.add_column(col, justify="right" if col != "model" else "left")
+    for m, r in res.items():
+        t, rd = float(r["temporal"]["pr_auc"]), float(r["random"]["pr_auc"])
+        table.add_row(m, f"{t:.4f}", f"{rd:.4f}", f"+{rd - t:.4f}")
+    console.print(table)
+
+    out_path = Path(results_path)
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    out_path.write_text(json.dumps(res, indent=2) + "\n", encoding="utf-8")
+    fig_path = Path("docs/media/results/leakage_multi.png")
+    fig_path.parent.mkdir(parents=True, exist_ok=True)
+    plot_leakage_multi(res, fig_path)
+    console.print(f"Saved to {out_path} and {fig_path}")
+
+
+@app.command()
+def train_graph_usad_dann(
+    root: str = "data/raw/elliptic",
+    results_path: str = "docs/results/graph_usad_dann.json",
+    epochs: int = 100,
+    gamma: float = 1.0,
+    seed: int = 42,
+) -> None:
+    """GraphUSAD v3: domain-adversarial (time-invariant) reconstruction. Requires ``gnn``."""
+    import json
+    from pathlib import Path
+
+    from gnn_fraud.ingestion.elliptic import load_elliptic, node_timesteps
+    from gnn_fraud.train.graph_usad_dann_trainer import train_graph_usad_dann as run_dann
+
+    data = load_elliptic(root)
+    timesteps = node_timesteps(root)
+    console.print("[bold]Training GraphUSAD v3 (domain-adversarial, time-invariant)...[/bold]")
+    out = run_dann(data, timesteps, epochs=epochs, gamma=gamma, seed=seed)
+    console.print(
+        f"  graph-usad-dann: PR-AUC={out.metrics.pr_auc:.4f} ROC-AUC={out.metrics.roc_auc:.4f} "
+        f"F1={out.metrics.f1:.4f} (best epoch {out.best_epoch}, val PR-AUC {out.best_val_pr_auc:.4f})"
+    )
+    out_path = Path(results_path)
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    out_path.write_text(
+        json.dumps({"graph-usad-dann": out.metrics.as_row()}, indent=2) + "\n", encoding="utf-8"
+    )
+    console.print(f"Saved result to {out_path}")
+
+
+@app.command()
 def smoke_train() -> None:
     """Run a tiny 1-epoch smoke train (requires the ``gnn`` extra).
 
