@@ -560,6 +560,41 @@ def train_graph_usad_dann(
 
 
 @app.command()
+def leakage_hetero(
+    root: str = "data/raw/elliptic_pp",
+    cache: str = "data/processed/elliptic_pp.pt",
+    target: str = "addr",
+    results_path: str = "docs/results/leakage_hetero.json",
+    seed: int = 42,
+) -> None:
+    """Leakage on the Elliptic++ hetero task (--target addr|tx): temporal vs random split.
+
+    Requires the ``gnn`` extra and the Elliptic++ data.
+    """
+    import json
+    from pathlib import Path
+
+    from gnn_fraud.experiments.leakage import run_hetero_leakage
+    from gnn_fraud.ingestion.elliptic_pp import build_hetero
+
+    data = build_hetero(root, cache)
+    console.print(f"[bold]Elliptic++ leakage ({target}): temporal vs random...[/bold]")
+    res = run_hetero_leakage(data, target=target, seed=seed)
+    t, r = float(res["temporal"]["pr_auc"]), float(res["random"]["pr_auc"])
+    table = Table(title=f"Elliptic++ {target}: honest temporal vs leaky random split")
+    for col in ("split", "PR-AUC", "F1"):
+        table.add_column(col, justify="right" if col != "split" else "left")
+    table.add_row("temporal (honest)", f"{t:.4f}", f"{res['temporal']['f1']:.4f}")
+    table.add_row("random (leaky)", f"{r:.4f}", f"{res['random']['f1']:.4f}")
+    console.print(table)
+    console.print(f"[bold red]Inflation: +{r - t:.3f} PR-AUC.[/bold red]")
+    out_path = Path(results_path)
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    out_path.write_text(json.dumps(res, indent=2) + "\n", encoding="utf-8")
+    console.print(f"Saved to {out_path}")
+
+
+@app.command()
 def smoke_train() -> None:
     """Run a tiny 1-epoch smoke train (requires the ``gnn`` extra).
 

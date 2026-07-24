@@ -60,3 +60,14 @@ def test_train_hetero_smoke(target: str) -> None:
     )
     assert 0.0 <= out.metrics.pr_auc <= 1.0
     assert 0.0 <= out.metrics.f1 <= 1.0
+
+
+def test_train_hetero_override_masks() -> None:
+    from gnn_fraud.experiments.leakage import random_masks
+
+    data = _synthetic_hetero()
+    tr, va, te = random_masks(data["addr"].y, seed=0)
+    out = train_hetero(
+        data, epochs=3, patience=3, seed=0, target="addr", override_masks=(tr, va, te)
+    )
+    assert 0.0 <= out.metrics.pr_auc <= 1.0

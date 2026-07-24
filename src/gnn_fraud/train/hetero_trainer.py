@@ -47,12 +47,21 @@ def train_hetero(
     seed: int = 42,
     val_start: int = 30,
     target: str = "tx",
+    override_masks: tuple[torch.Tensor, torch.Tensor, torch.Tensor] | None = None,
 ) -> TrainOutcome:
-    """Train HeteroGNN on ``target`` nodes; return test metrics (threshold on val)."""
+    """Train HeteroGNN on ``target`` nodes; return test metrics (threshold on val).
+
+    ``override_masks`` (sub_train, val, test) replaces the built-in temporal split -
+    used by the leakage experiment to run the same model under a random split.
+    """
     torch.manual_seed(seed)
     data = T.ToUndirected(merge=False)(data)
 
-    sub_train, val = _masks(data, val_start, target)
+    if override_masks is not None:
+        sub_train, val, test_mask = override_masks
+    else:
+        sub_train, val = _masks(data, val_start, target)
+        test_mask = data[target].test_mask
     y = data[target].y
     x_dict = data.x_dict
     edge_index_dict = data.edge_index_dict
@@ -92,7 +101,6 @@ def train_hetero(
     model.load_state_dict(best_state)
     prob = positive_prob()
     threshold = best_f1_threshold(y_val, prob[val].cpu().numpy())
-    test_mask = data[target].test_mask
     metrics = evaluate_binary(
         y[test_mask].cpu().numpy(),
         prob[test_mask].cpu().numpy(),

@@ -113,6 +113,18 @@ def run_leakage_experiment(
     return {"temporal": temporal.as_row(), "random": random_split.as_row()}
 
 
+def run_hetero_leakage(
+    data: Any, target: str = "addr", seed: int = 42
+) -> dict[str, dict[str, float | int]]:
+    """Leakage on the Elliptic++ heterogeneous task: temporal vs random split of ``target`` nodes."""
+    from gnn_fraud.train.hetero_trainer import train_hetero
+
+    temporal = train_hetero(data, target=target, seed=seed).metrics
+    tr, va, te = random_masks(data[target].y, seed=seed)
+    random_split = train_hetero(data, target=target, seed=seed, override_masks=(tr, va, te)).metrics
+    return {"temporal": temporal.as_row(), "random": random_split.as_row()}
+
+
 def _xgb_with_masks(
     data: Data,
     train_mask: torch.Tensor,

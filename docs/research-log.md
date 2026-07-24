@@ -142,3 +142,32 @@ regime-change shift, full stop. USAD-on-graph is *novel* but does not work on El
 This is an honest negative result. The consolidated, defensible contribution is the
 leakage-free benchmark (Exp 2 + Exp 4 + the SOTA review): a reality check showing the
 reported Elliptic SOTA is a leakage artifact.
+
+---
+
+## Exp 6 - Leakage generalizes to a second task (Elliptic++ addresses): STRONG
+
+**Hypothesis.** If the inflation is a systematic property of random splits on temporal
+graphs (not an Elliptic-transactions quirk), it should reproduce on a structurally
+different task.
+
+**Setup.** `gnn-fraud leakage-hetero --target addr`: the heterogeneous GNN on the
+Elliptic++ **address** task (822,942 address nodes, first-seen temporal split), under
+the honest temporal split vs a stratified random split.
+
+**Result (confirmed):**
+| Split | PR-AUC | F1 |
+|---|---|---|
+| Temporal (honest) | 0.456 | 0.529 |
+| **Random (leaky)** | **0.974** | **0.925** |
+
+**+0.518 PR-AUC from the split alone** - PR-AUC 0.46 -> 0.97, F1 0.53 -> 0.93 - on a
+heterogeneous graph and a different node type. The inflation is **not** an
+Elliptic-transactions artifact; it is systematic (consistent with the +0.44-0.51 on
+the transaction task in Exp 4). This is the multi-task/multi-graph generalization that
+makes the leakage critique (C1) robust, not anecdotal.
+
+**Status.** C1 (leakage-free benchmark reality-check) now demonstrated on the Elliptic
+transaction task (4 models) and the Elliptic++ address task - a solid, generalizable,
+publishable contribution. Optional further strengthening: a fully different-domain
+dataset (DGraph-Fin, gated behind registration).

@@ -242,6 +242,11 @@ and two experiments ([`docs/research-log.md`](docs/research-log.md)):
 
   ![leakage](docs/media/results/leakage_multi.png)
 
+  **It generalizes to a second, different task.** On Elliptic++ **address**
+  classification (heterogeneous graph, 822k address nodes), the same inflation appears:
+  PR-AUC 0.46 -> **0.97** (F1 0.53 -> 0.93), +0.52 from the random split. The leakage is
+  systematic, not an Elliptic-transactions quirk.
+
 - **The post-time-step-43 collapse is the real open problem** and is unsolved by any
   surveyed method under honest evaluation (our rolling backtest reproduces it). A
   naive USAD-on-graph (GraphUSAD v1) fails the same way the plain autoencoder does -
