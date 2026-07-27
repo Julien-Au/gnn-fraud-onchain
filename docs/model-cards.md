@@ -68,7 +68,7 @@ XGBoost baseline yet.
 
 ### Heterogeneous SAGE, address target (Elliptic++) - a different task
 - **Input**: same HeteroData; target is the **address** node type; addresses split
-  by first-seen time step (train 172,903 / test 92,451 labeled; 5.4% illicit).
+  by first-seen time step (train 172,903 / test 92,451 labeled; 5.3% illicit).
 - **Result**: PR-AUC **0.456**, F1 0.529 - detects illicit *actors* (wallets), not
   just transactions. Same model, different node type, no architecture change.
 - **Reproduce**: `gnn-fraud train-hetero --target addr`.

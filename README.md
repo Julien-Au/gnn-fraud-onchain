@@ -197,7 +197,7 @@ are mean-aggregated per address (a modeling choice, documented).
 
 The same heterogeneous model, pointed at the **address** node type instead of `tx`
 (`gnn-fraud train-hetero --target addr`), detects illicit **wallets** - a different,
-arguably more actionable task (find the actors). On 92,451 test addresses (5.4%
+arguably more actionable task (find the actors). On 92,451 test addresses (5.3%
 illicit, split by first-seen time step) it scores **PR-AUC 0.456 / F1 0.529**,
 catching 2,805 of 4,889 illicit addresses. The point is less the absolute number
 than that **one schema-parameterized model serves both node types with no
@@ -229,12 +229,16 @@ Mirage"*):
 - **Our honest results match the field's honest SOTA.** Under a strict temporal split
   and illicit-class F1 - the only comparable setting - tree ensembles (~0.80) beat
   GNNs by 10+ points, from Weber et al. 2019 to 2026. We reproduce that ordering.
-- **The reported "~0.9-0.98 SOTA" is largely a leakage artifact.** Under a *random*
-  split, **every model reaches "SOTA-looking" numbers** - XGBoost hits PR-AUC 0.987 /
-  F1 0.955 (exactly the reported ~0.98), GraphSAGE F1 0.86 - then collapses under the
-  honest temporal split. Same models, only the split changed. GNNs inflate *more*
-  (+0.44-0.51 PR-AUC) than XGBoost (+0.20): a double leak (labels **and** message
-  passing crossing the train/test boundary).
+- **The reported "~0.9-0.98 SOTA" is largely a protocol artifact.** Under a *random*
+  split, **every model reaches "SOTA-looking" numbers** - XGBoost hits F1 0.955 /
+  PR-AUC 0.987 (inside the literature's reported ~0.90-0.98 F1 band), GraphSAGE F1
+  0.86 - then collapses under the honest temporal split. Same models, only the split
+  changed. GNNs inflate *more* (+0.44-0.51 PR-AUC) than XGBoost (+0.20), consistent
+  with a double leak (labels **and** message passing crossing the train/test
+  boundary) - a hypothesis we state but have not yet isolated by ablation. Note the
+  measured gap bundles leakage with prevalence and covariate shift (temporal test is
+  6.5% illicit vs 9.8% random); decomposing these components is in progress (see
+  [`docs/research-log.md`](docs/research-log.md)).
 
   | Model | Temporal PR-AUC | Random PR-AUC | Inflation |
   |---|---|---|---|
@@ -245,14 +249,16 @@ Mirage"*):
 
   ![leakage](docs/media/results/leakage_multi.png)
 
-  **It generalizes to a second task, and a cross-domain control reveals the mechanism.**
+  **It generalizes to a second task, and a cross-domain control points at the mechanism.**
   On Elliptic++ **address** classification (heterogeneous, 822k nodes) the same inflation
-  appears (+0.52); over 3 seeds it is +0.427 +/- 0.043. But on **DGraph-Fin** (3.7M-node
-  fintech graph with a *temporally stable* fraud rate) there is **no** inflation (+0.002):
-  where the distribution does not shift, a random split and a temporal split agree. So the
-  inflation is a symptom of **temporal distribution shift**, not of random splitting per
-  se - and Elliptic/Elliptic++ are exactly the shifting benchmarks where random-split
-  evaluation is dangerous.
+  appears (+0.52, single seed); on the Elliptic *transaction* task it is +0.427 +/- 0.043
+  over 3 seeds (GraphSAGE). On **DGraph-Fin** (3.7M-node fintech graph with a *temporally
+  stable* fraud rate) the PR-AUC inflation vanishes (+0.002) - though ROC-AUC still
+  inflates by +0.031, and both models sit near the PR-AUC floor, so this control is
+  suggestive rather than decisive. The pattern is consistent with the inflation being a
+  symptom of **temporal distribution shift** rather than of random splitting per se - and
+  Elliptic/Elliptic++ are exactly the shifting benchmarks where random-split evaluation
+  is dangerous.
 
 - **The post-time-step-43 collapse is the real open problem** and is unsolved by any
   surveyed method under honest evaluation (our rolling backtest reproduces it). A

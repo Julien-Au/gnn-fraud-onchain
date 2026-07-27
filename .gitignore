@@ -33,3 +33,6 @@ wandb/
 .DS_Store
 .idea/
 .vscode/
+
+# Internal review documents (never committed)
+docs/reviews/
