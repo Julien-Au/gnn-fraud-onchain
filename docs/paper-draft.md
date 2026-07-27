@@ -16,13 +16,17 @@ PR-AUC by +0.20 to +0.52 across four models and two tasks: under the random spli
 vanilla GraphSAGE reaches F1 0.86 and XGBoost reaches PR-AUC 0.987 / F1 0.955 - squarely
 in the reported "SOTA" range - while the identical models score far lower under temporal
 evaluation. The inflation generalizes from the Elliptic transaction task to the
-Elliptic++ address task (+0.52). Under the only comparable protocol - illicit-class F1
-with a temporal split - gradient-boosted trees still beat graph neural networks by 10+
-points, reproducing the original 2019 benchmark. We further characterize the field's
-genuine open problem, the post-time-step-43 "dark-market shutdown" distribution shift,
-under which per-window PR-AUC collapses to ~0.01 and which no surveyed method closes, and
-we report a novel but negative attempt to address it with a USAD-style adversarial graph
-autoencoder (three variants, all failing). We recommend that graph-fraud papers report
+Elliptic++ address task (+0.52) and is robust across seeds. Critically, a cross-domain
+control - DGraph-Fin, a temporally *stable* fintech graph - shows *no* inflation
+(+0.002), isolating the cause: the inflation is driven by temporal distribution shift,
+not by random splitting per se, which sharpens the warning for shifting benchmarks like
+Elliptic. Under the only comparable protocol - illicit-class F1 with a temporal split -
+gradient-boosted trees still beat graph neural networks by 10+ points, reproducing the
+original 2019 benchmark. We further characterize the field's genuine open problem, the
+post-time-step-43 "dark-market shutdown" distribution shift, under which per-window
+PR-AUC collapses to ~0.01 and which no surveyed method closes, and we report novel but
+negative attempts to address it with a USAD-style adversarial graph autoencoder and a
+supervised domain-adversarial GNN (four variants, all failing). We recommend that graph-fraud papers report
 illicit-class F1 / PR-AUC under a strict temporal split and treat the post-shift window
 as the real benchmark.
 
@@ -97,6 +101,16 @@ PR-AUC 0.456 -> 0.974, F1 0.529 -> 0.925 (+0.518). It is also robust across seed
 GraphSAGE over three seeds the inflation is **+0.427 +/- 0.043 PR-AUC** (temporal 0.495 +/-
 0.036 vs random 0.922 +/- 0.008). The inflation is therefore systematic across models,
 tasks, and seeds - not an artifact of any single configuration.
+
+**A cross-domain negative control isolates the cause.** On DGraph-Fin (3.7M nodes, a
+Chinese fintech social graph with a temporally *stable* fraud rate), the same GraphSAGE
+shows essentially **no** inflation: temporal PR-AUC 0.037 vs random 0.039 (+0.002). Where
+the distribution does not shift over time, a random split and a temporal split agree, so
+there is nothing to leak. This confirms the inflation is a symptom of temporal
+distribution shift rather than of random splitting itself - and that Elliptic/Elliptic++,
+which shift strongly, are exactly the cases where random-split evaluation is dangerous.
+(On DGraph both models are weak in absolute terms, PR-AUC ~0.037 vs a 1.3% base rate;
+we report ROC-AUC ~0.74-0.77 for transparency.)
 
 ### 4.3 The real open problem: the post-shift collapse
 

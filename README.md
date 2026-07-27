@@ -245,10 +245,14 @@ Mirage"*):
 
   ![leakage](docs/media/results/leakage_multi.png)
 
-  **It generalizes to a second, different task.** On Elliptic++ **address**
-  classification (heterogeneous graph, 822k address nodes), the same inflation appears:
-  PR-AUC 0.46 -> **0.97** (F1 0.53 -> 0.93), +0.52 from the random split. The leakage is
-  systematic, not an Elliptic-transactions quirk.
+  **It generalizes to a second task, and a cross-domain control reveals the mechanism.**
+  On Elliptic++ **address** classification (heterogeneous, 822k nodes) the same inflation
+  appears (+0.52); over 3 seeds it is +0.427 +/- 0.043. But on **DGraph-Fin** (3.7M-node
+  fintech graph with a *temporally stable* fraud rate) there is **no** inflation (+0.002):
+  where the distribution does not shift, a random split and a temporal split agree. So the
+  inflation is a symptom of **temporal distribution shift**, not of random splitting per
+  se - and Elliptic/Elliptic++ are exactly the shifting benchmarks where random-split
+  evaluation is dangerous.
 
 - **The post-time-step-43 collapse is the real open problem** and is unsolved by any
   surveyed method under honest evaluation (our rolling backtest reproduces it). A

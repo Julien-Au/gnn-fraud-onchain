@@ -201,6 +201,36 @@ shift. This closes the bounded method-exploration with an honest negative.
 single-seed artifact. With the Elliptic++ address generalization (+0.52), C1 is
 statistically and across-task solid.
 
+## Exp 9 - DGraph-Fin cross-domain: a negative control that reveals the mechanism
+
+**Setup.** `gnn-fraud leakage-dgraph`: the same GraphSAGE on DGraph-Fin (3.7M nodes,
+4.3M timestamped edges, ~1.3% fraud; a Chinese fintech social graph, gated dataset),
+under a temporal (first-seen) split vs a random split.
+
+**Result (informative, not what we expected):**
+| Split | PR-AUC | F1 | ROC-AUC |
+|---|---|---|---|
+| Temporal (honest) | 0.037 | 0.079 | 0.736 |
+| Random (leaky) | 0.039 | 0.085 | 0.767 |
+
+**Inflation +0.002 PR-AUC - essentially none**, in sharp contrast to Elliptic
+(+0.44-0.52). Two honest reads, both refining the thesis:
+1. **Mechanism.** DGraph's fraud rate is roughly temporally stable (1.2% -> 1.4%),
+   so a random split and a temporal split are similar - there is no future to leak.
+   The Elliptic inflation is therefore driven by its strong temporal distribution
+   shift (the dark-market shutdown), not by random splitting per se. DGraph acts as a
+   **negative control** that isolates the cause.
+2. **Caveat.** On DGraph, GraphSAGE is weak in absolute terms (PR-AUC ~0.037, a few x
+   the 1.3% base rate; ROC-AUC ~0.74), so the comparison is between two weak models;
+   we report ROC-AUC alongside PR-AUC for transparency.
+
+**Refined claim (stronger and more honest).** Leakage inflation is not universal - it
+scales with the temporal distribution shift. Where the shift is strong (Elliptic,
+Elliptic++), random-split evaluation is catastrophically misleading (+0.44-0.52
+PR-AUC); where the distribution is stable (DGraph), it is negligible. The practical
+warning stands and is sharper: *on temporally-shifting fraud graphs, report a temporal
+split* - and the popular Elliptic benchmark is exactly such a case.
+
 ## Overall verdict
 
 Two clean contributions and four honest negatives. **C1 (the leakage-free reality
