@@ -679,6 +679,39 @@ def leakage_seeds(
 
 
 @app.command()
+def leakage_dgraph(
+    root: str = "data/raw/dgraphfin",
+    cache: str = "data/processed/dgraph.pt",
+    model: str = "sage",
+    results_path: str = "docs/results/leakage_dgraph.json",
+    seed: int = 42,
+) -> None:
+    """Leakage on DGraph-Fin (cross-domain): temporal vs random split. Requires ``gnn``."""
+    import json
+    from pathlib import Path
+
+    from gnn_fraud.experiments.leakage import run_dgraph_leakage
+    from gnn_fraud.ingestion.dgraph import load_dgraph
+
+    console.print("[bold]Loading DGraph-Fin (cached after first build)...[/bold]")
+    data = load_dgraph(root, cache)
+    console.print(f"[bold]DGraph leakage ({model}): temporal vs random...[/bold]")
+    res = run_dgraph_leakage(data, model_name=model, seed=seed)
+    t, r = float(res["temporal"]["pr_auc"]), float(res["random"]["pr_auc"])
+    table = Table(title=f"DGraph-Fin {model}: honest temporal vs leaky random split")
+    for col in ("split", "PR-AUC", "F1"):
+        table.add_column(col, justify="right" if col != "split" else "left")
+    table.add_row("temporal (honest)", f"{t:.4f}", f"{res['temporal']['f1']:.4f}")
+    table.add_row("random (leaky)", f"{r:.4f}", f"{res['random']['f1']:.4f}")
+    console.print(table)
+    console.print(f"[bold red]Inflation: +{r - t:.3f} PR-AUC (cross-domain).[/bold red]")
+    out_path = Path(results_path)
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    out_path.write_text(json.dumps(res, indent=2) + "\n", encoding="utf-8")
+    console.print(f"Saved to {out_path}")
+
+
+@app.command()
 def smoke_train() -> None:
     """Run a tiny 1-epoch smoke train (requires the ``gnn`` extra).
 

@@ -101,6 +101,25 @@ Not required for the default pipeline; a track to demonstrate real ingestion.
 | Ethereum phishing (XBlock) | Ethereum | directed multigraph | phishing/normal | partial | XBlock.pro | med-high |
 | Etherscan / BigQuery | Ethereum | build-your-own | weak / derived | yes | official API | high |
 
+## Cross-domain benchmark: DGraph-Fin
+
+- **What**: A large financial social graph from Finvolution (a Chinese fintech),
+  used as a *different-domain* test of whether the leakage inflation generalizes
+  beyond crypto. Nodes = users, edges = timestamped emergency-contact relations.
+- **Scale (verified at ingestion)**: 3,700,550 nodes (17 features), 4,300,999
+  timestamped directed edges. Labels: 0 = normal (1,210,092), 1 = fraud (15,509,
+  ~1.3% of labeled), 2/3 = unlabeled background.
+- **Source / paper**: Huang et al., *"DGraph: A Large-Scale Financial Dataset for
+  Graph Anomaly Detection"*, NeurIPS 2022 (arXiv 2207.03579);
+  [dgraph.xinye.com](https://dgraph.xinye.com).
+- **License / access**: **Gated** - requires registration and agreement to the
+  dataset's terms of use before download. Obtained by the project owner under those
+  terms; **used for non-commercial research only and never redistributed in this
+  repo** (raw files gitignored). The v2 release adds node/edge timestamp arrays; we
+  derive a per-node first-seen time from edge timestamps for the temporal split.
+- **Status**: used to reproduce the leakage critique cross-domain (not for a model
+  claim); cite the NeurIPS'22 paper.
+
 ## Integrity rules (recap)
 
 - Provenance + license recorded here for anything we load.

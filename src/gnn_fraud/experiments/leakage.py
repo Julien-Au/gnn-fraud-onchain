@@ -125,6 +125,29 @@ def run_hetero_leakage(
     return {"temporal": temporal.as_row(), "random": random_split.as_row()}
 
 
+def run_dgraph_leakage(
+    data: Data, model_name: str = "sage", seed: int = 42, p_train: int = 55, p_test: int = 70
+) -> dict[str, dict[str, float | int]]:
+    """Leakage on DGraph-Fin: temporal (first-seen) split vs random split, same GNN.
+
+    Tests whether the inflation generalizes to a different domain (fintech social graph).
+    """
+    y = data.y
+    labeled = (y == 0) | (y == 1)
+    nt = data.node_time
+    lt = nt[labeled].cpu().numpy()
+    thr_train = int(np.percentile(lt, p_train))
+    thr_test = int(np.percentile(lt, p_test))
+    t_train = labeled & (nt <= thr_train)
+    t_val = labeled & (nt > thr_train) & (nt <= thr_test)
+    t_test = labeled & (nt > thr_test)
+    r_train, r_val, r_test = random_masks(y, seed=seed)
+
+    temporal = _fit_with_masks(data, model_name, t_train, t_val, t_test, seed=seed)
+    random_split = _fit_with_masks(data, model_name, r_train, r_val, r_test, seed=seed)
+    return {"temporal": temporal.as_row(), "random": random_split.as_row()}
+
+
 def _xgb_with_masks(
     data: Data,
     train_mask: torch.Tensor,
