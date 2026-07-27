@@ -8,6 +8,8 @@ the green-gate runs - stays fast and dependency-light.
 
 from __future__ import annotations
 
+from typing import Any
+
 import typer
 from rich.console import Console
 from rich.table import Table
@@ -492,9 +494,9 @@ def leakage_multi(
     root: str = "data/raw/elliptic",
     models: str = "gcn,sage,gat",
     results_path: str = "docs/results/leakage_multi.json",
-    seed: int = 42,
+    seeds: str = "42",
 ) -> None:
-    """Multi-model leakage table: each model under honest temporal vs leaky random split.
+    """Multi-model, multi-seed leakage table: temporal vs random split per model.
 
     Requires the ``gnn`` extra (``boost`` adds the XGBoost row).
     """
@@ -508,15 +510,25 @@ def leakage_multi(
     data = load_elliptic(root)
     timesteps = node_timesteps(root)
     model_list = tuple(m.strip() for m in models.split(",") if m.strip())
-    console.print("[bold]Multi-model leakage: temporal vs random split...[/bold]")
-    res = run_leakage_multi(data, timesteps, models=model_list, seed=seed)
+    seed_list = tuple(int(s) for s in seeds.split(",") if s.strip())
+    console.print(
+        f"[bold]Multi-model leakage ({len(seed_list)} seed(s)): temporal vs random...[/bold]"
+    )
+    res = run_leakage_multi(data, timesteps, models=model_list, seeds=seed_list)
 
-    table = Table(title="PR-AUC: honest temporal vs leaky random split (same model)")
+    table = Table(
+        title=f"PR-AUC mean +/- std (n={len(seed_list)}): temporal vs random (same model)"
+    )
     for col in ("model", "temporal", "random", "inflation"):
         table.add_column(col, justify="right" if col != "model" else "left")
     for m, r in res.items():
-        t, rd = float(r["temporal"]["pr_auc"]), float(r["random"]["pr_auc"])
-        table.add_row(m, f"{t:.4f}", f"{rd:.4f}", f"+{rd - t:.4f}")
+        pr = r["pr_auc"]
+        table.add_row(
+            m,
+            f"{pr['temporal']['mean']:.4f} +/- {pr['temporal']['std']:.4f}",
+            f"{pr['random']['mean']:.4f} +/- {pr['random']['std']:.4f}",
+            f"+{pr['inflation']['mean']:.4f} +/- {pr['inflation']['std']:.4f}",
+        )
     console.print(table)
 
     out_path = Path(results_path)
@@ -564,11 +576,14 @@ def leakage_hetero(
     root: str = "data/raw/elliptic_pp",
     cache: str = "data/processed/elliptic_pp.pt",
     target: str = "addr",
+    feature_window: str = "lifetime",
     results_path: str = "docs/results/leakage_hetero.json",
     seed: int = 42,
 ) -> None:
     """Leakage on the Elliptic++ hetero task (--target addr|tx): temporal vs random split.
 
+    --feature-window pre_split builds the deployment-honest variant (wallet features
+    aggregated over pre-split activity only; train-only scaling).
     Requires the ``gnn`` extra and the Elliptic++ data.
     """
     import json
@@ -577,8 +592,11 @@ def leakage_hetero(
     from gnn_fraud.experiments.leakage import run_hetero_leakage
     from gnn_fraud.ingestion.elliptic_pp import build_hetero
 
-    data = build_hetero(root, cache)
-    console.print(f"[bold]Elliptic++ leakage ({target}): temporal vs random...[/bold]")
+    data = build_hetero(root, cache, feature_window=feature_window)
+    console.print(
+        f"[bold]Elliptic++ leakage ({target}, features={feature_window}): "
+        "temporal vs random...[/bold]"
+    )
     res = run_hetero_leakage(data, target=target, seed=seed)
     t, r = float(res["temporal"]["pr_auc"]), float(res["random"]["pr_auc"])
     table = Table(title=f"Elliptic++ {target}: honest temporal vs leaky random split")
@@ -589,6 +607,8 @@ def leakage_hetero(
     console.print(table)
     console.print(f"[bold red]Inflation: +{r - t:.3f} PR-AUC.[/bold red]")
     out_path = Path(results_path)
+    if feature_window != "lifetime":
+        out_path = out_path.with_name(out_path.stem + f"_{feature_window}.json")
     out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.write_text(json.dumps(res, indent=2) + "\n", encoding="utf-8")
     console.print(f"Saved to {out_path}")
@@ -699,15 +719,102 @@ def leakage_dgraph(
     res = run_dgraph_leakage(data, model_name=model, seed=seed)
     t, r = float(res["temporal"]["pr_auc"]), float(res["random"]["pr_auc"])
     table = Table(title=f"DGraph-Fin {model}: honest temporal vs leaky random split")
-    for col in ("split", "PR-AUC", "F1"):
+    for col in ("split", "PR-AUC", "ROC-AUC", "F1"):
         table.add_column(col, justify="right" if col != "split" else "left")
-    table.add_row("temporal (honest)", f"{t:.4f}", f"{res['temporal']['f1']:.4f}")
-    table.add_row("random (leaky)", f"{r:.4f}", f"{res['random']['f1']:.4f}")
+    table.add_row(
+        "temporal (honest)",
+        f"{t:.4f}",
+        f"{res['temporal']['roc_auc']:.4f}",
+        f"{res['temporal']['f1']:.4f}",
+    )
+    table.add_row(
+        "random (leaky)",
+        f"{r:.4f}",
+        f"{res['random']['roc_auc']:.4f}",
+        f"{res['random']['f1']:.4f}",
+    )
     console.print(table)
-    console.print(f"[bold red]Inflation: +{r - t:.3f} PR-AUC (cross-domain).[/bold red]")
+    console.print(
+        f"[bold red]Inflation: +{r - t:.3f} PR-AUC / "
+        f"+{float(res['random']['roc_auc']) - float(res['temporal']['roc_auc']):.3f} ROC-AUC "
+        "(cross-domain).[/bold red]"
+    )
     out_path = Path(results_path)
     out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.write_text(json.dumps(res, indent=2) + "\n", encoding="utf-8")
+    console.print(f"Saved to {out_path}")
+
+
+@app.command()
+def decompose(
+    root: str = "data/raw/elliptic",
+    model: str = "sage",
+    seeds: str = "42,43,44,45,46",
+    results_path: str = "docs/results/decompose.json",
+) -> None:
+    """Decompose the temporal-vs-random gap: base-rate vs message-passing leak vs
+    distribution access. The core experiment of the leakage study. Requires ``gnn``."""
+    import json
+    from pathlib import Path
+
+    from gnn_fraud.experiments.decompose import run_decompose
+    from gnn_fraud.ingestion.elliptic import load_elliptic, node_timesteps
+
+    data = load_elliptic(root)
+    timesteps = node_timesteps(root)
+    seed_list = tuple(int(s) for s in seeds.split(",") if s.strip())
+    console.print(f"[bold]Decomposition ({model}, {len(seed_list)} seeds)...[/bold]")
+    res = run_decompose(data, timesteps, model_name=model, seeds=seed_list)
+
+    table = Table(title=f"Gap decomposition - {model} (PR-AUC, mean +/- std, n={len(seed_list)})")
+    table.add_column("component")
+    table.add_column("value", justify="right")
+    for name, arm in res["arms"].items():
+        table.add_row(f"arm: {name}", f"{arm['mean']:.4f} +/- {arm['std']:.4f}")
+    for name, comp in res["components"].items():
+        table.add_row(f"[bold]{name}[/bold]", f"{comp['mean']:.4f} +/- {comp['std']:.4f}")
+    console.print(table)
+
+    out_path = Path(results_path)
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    existing = json.loads(out_path.read_text(encoding="utf-8")) if out_path.exists() else {}
+    existing[model] = res
+    out_path.write_text(json.dumps(existing, indent=2) + "\n", encoding="utf-8")
+    console.print(f"Saved to {out_path}")
+
+
+@app.command()
+def tune_gnn(
+    root: str = "data/raw/elliptic",
+    models: str = "sage,gcn",
+    seed: int = 42,
+    results_path: str = "docs/results/tuning.json",
+) -> None:
+    """Hyperparameter sweep for GNNs on the honest temporal split (select on val).
+
+    Requires the ``gnn`` extra.
+    """
+    import json
+    from pathlib import Path
+
+    from gnn_fraud.experiments.tuning import run_tuning
+    from gnn_fraud.ingestion.elliptic import load_elliptic, node_timesteps
+
+    data = load_elliptic(root)
+    timesteps = node_timesteps(root)
+    out: dict[str, Any] = {}
+    for m in [x.strip() for x in models.split(",") if x.strip()]:
+        console.print(f"[bold]Tuning {m} (12-config grid, temporal val selection)...[/bold]")
+        res = run_tuning(data, timesteps, model_name=m, seed=seed)
+        out[m] = res
+        sel = res["selected"]
+        console.print(
+            f"  {m}: best hp={sel['hp']} val PR-AUC={sel['val_pr_auc']:.4f} "
+            f"-> test PR-AUC={sel['test']['pr_auc']:.4f} F1={sel['test']['f1']:.4f}"
+        )
+    out_path = Path(results_path)
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    out_path.write_text(json.dumps(out, indent=2) + "\n", encoding="utf-8")
     console.print(f"Saved to {out_path}")
 
 
@@ -724,17 +831,20 @@ def smoke_train() -> None:
     except ImportError as exc:  # pragma: no cover - exercised only without the extra
         raise typer.Exit(code=1) from exc
 
+    from gnn_fraud.models.gnn import build_model
+
     torch.manual_seed(0)
-    # Minimal, honest smoke: a linear layer takes one optimisation step. Real
-    # message-passing models replace this from step 3 onward.
-    x = torch.randn(8, 4)
-    y = torch.randn(8, 1)
-    layer = torch.nn.Linear(4, 1)
-    opt = torch.optim.SGD(layer.parameters(), lr=0.01)
-    loss = torch.nn.functional.mse_loss(layer(x), y)
+    # A real message-passing smoke: one training step of GraphSAGE on a tiny
+    # synthetic graph (exercises PyG conv layers, not just torch).
+    x = torch.randn(16, 8)
+    edge_index = torch.randint(0, 16, (2, 40))
+    y = torch.randint(0, 2, (16,))
+    model = build_model("sage", in_dim=8, hidden_dim=16)
+    opt = torch.optim.SGD(model.parameters(), lr=0.01)
+    loss = torch.nn.functional.cross_entropy(model(x, edge_index), y)
     loss.backward()
     opt.step()
-    console.print(f"smoke train OK (loss={loss.item():.4f})")
+    console.print(f"smoke train OK (GraphSAGE 1 step, loss={loss.item():.4f})")
 
 
 if __name__ == "__main__":

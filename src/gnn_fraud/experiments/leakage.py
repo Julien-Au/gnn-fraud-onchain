@@ -59,8 +59,8 @@ def _fit_with_masks(
     epochs: int = 200,
     patience: int = 20,
     seed: int = 42,
-) -> BinaryMetrics:
-    """Transductive GNN training with arbitrary train/val/test masks."""
+) -> tuple[BinaryMetrics, float]:
+    """Transductive GNN training with arbitrary masks; returns (test metrics, best val PR-AUC)."""
     torch.manual_seed(seed)
     y = data.y
     labels = y[train_mask]
@@ -100,7 +100,8 @@ def _fit_with_masks(
     model.load_state_dict(best_state)
     p = prob()
     thr = best_f1_threshold(y_val, p[val_mask].cpu().numpy())
-    return evaluate_binary(y[test_mask].cpu().numpy(), p[test_mask].cpu().numpy(), thr)
+    metrics = evaluate_binary(y[test_mask].cpu().numpy(), p[test_mask].cpu().numpy(), thr)
+    return metrics, float(best_val)
 
 
 def run_leakage_experiment(
@@ -109,7 +110,7 @@ def run_leakage_experiment(
     """Compare the same GNN under the temporal split vs a leaky random split."""
     temporal = train_gnn(data, timesteps, model_name, seed=seed).metrics
     train_m, val_m, test_m = random_masks(data.y, seed=seed)
-    random_split = _fit_with_masks(data, model_name, train_m, val_m, test_m, seed=seed)
+    random_split, _ = _fit_with_masks(data, model_name, train_m, val_m, test_m, seed=seed)
     return {"temporal": temporal.as_row(), "random": random_split.as_row()}
 
 
@@ -143,8 +144,8 @@ def run_dgraph_leakage(
     t_test = labeled & (nt > thr_test)
     r_train, r_val, r_test = random_masks(y, seed=seed)
 
-    temporal = _fit_with_masks(data, model_name, t_train, t_val, t_test, seed=seed)
-    random_split = _fit_with_masks(data, model_name, r_train, r_val, r_test, seed=seed)
+    temporal, _ = _fit_with_masks(data, model_name, t_train, t_val, t_test, seed=seed)
+    random_split, _ = _fit_with_masks(data, model_name, r_train, r_val, r_test, seed=seed)
     return {"temporal": temporal.as_row(), "random": random_split.as_row()}
 
 
@@ -186,29 +187,59 @@ def run_leakage_multi(
     data: Data,
     timesteps: NDArray[Any],
     models: tuple[str, ...] = ("gcn", "sage", "gat"),
-    seed: int = 42,
+    seeds: tuple[int, ...] = (42,),
     val_start: int = 30,
-) -> dict[str, dict[str, dict[str, float | int]]]:
-    """Multi-model leakage table: each model under the honest temporal vs a leaky random split.
+) -> dict[str, dict[str, Any]]:
+    """Multi-model, multi-seed leakage table: temporal vs random split per model.
 
     Uses one trainer with different masks so the ONLY difference is the split.
+    Returns per-model {temporal, random, inflation} with mean/std/per_seed PR-AUC,
+    plus the seed-42 full metric rows for backward compatibility.
     """
+    import statistics
+
     ts = torch.as_tensor(np.asarray(timesteps))
     t_train = data.train_mask & (ts < val_start)
     t_val = data.train_mask & (ts >= val_start)
     t_test = data.test_mask
-    r_train, r_val, r_test = random_masks(data.y, seed=seed)
 
-    out: dict[str, dict[str, dict[str, float | int]]] = {}
-    for m in models:
-        temporal = _fit_with_masks(data, m, t_train, t_val, t_test, seed=seed)
-        random_split = _fit_with_masks(data, m, r_train, r_val, r_test, seed=seed)
-        out[m] = {"temporal": temporal.as_row(), "random": random_split.as_row()}
-    try:
-        out["xgboost"] = {
-            "temporal": _xgb_with_masks(data, t_train, t_val, t_test, seed).as_row(),
-            "random": _xgb_with_masks(data, r_train, r_val, r_test, seed).as_row(),
+    def _agg(values: list[float]) -> dict[str, Any]:
+        return {
+            "mean": round(statistics.mean(values), 4),
+            "std": round(statistics.pstdev(values) if len(values) > 1 else 0.0, 4),
+            "per_seed": [round(v, 4) for v in values],
         }
-    except ImportError:
-        pass
+
+    all_models = [*models, "xgboost"]
+    out: dict[str, dict[str, Any]] = {}
+    for m in all_models:
+        t_pr: list[float] = []
+        r_pr: list[float] = []
+        first_rows: dict[str, dict[str, float | int]] = {}
+        for seed in seeds:
+            r_train, r_val, r_test = random_masks(data.y, seed=seed)
+            try:
+                if m == "xgboost":
+                    tm = _xgb_with_masks(data, t_train, t_val, t_test, seed)
+                    rm = _xgb_with_masks(data, r_train, r_val, r_test, seed)
+                else:
+                    tm, _ = _fit_with_masks(data, m, t_train, t_val, t_test, seed=seed)
+                    rm, _ = _fit_with_masks(data, m, r_train, r_val, r_test, seed=seed)
+            except ImportError:
+                break  # xgboost extra not installed
+            t_pr.append(tm.pr_auc)
+            r_pr.append(rm.pr_auc)
+            if not first_rows:
+                first_rows = {"temporal": tm.as_row(), "random": rm.as_row()}
+        if not t_pr:
+            continue
+        out[m] = {
+            **first_rows,
+            "pr_auc": {
+                "temporal": _agg(t_pr),
+                "random": _agg(r_pr),
+                "inflation": _agg([r - t for r, t in zip(r_pr, t_pr, strict=True)]),
+            },
+            "seeds": list(seeds[: len(t_pr)]),
+        }
     return out

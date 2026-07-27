@@ -39,19 +39,44 @@ def _index_map(ids: NDArray[Any]) -> dict[object, int]:
     return {v: i for i, v in enumerate(ids)}
 
 
-def _clean_features(feat: NDArray[Any]) -> NDArray[Any]:
+def _clean_features(feat: NDArray[Any], fit_mask: NDArray[Any] | None = None) -> NDArray[Any]:
     """Replace non-finite values with 0 and z-score each column.
 
     Wallet features mix wildly different scales (block numbers ~4e5, small counts)
-    and contain NaNs; without this the GNN produces NaN predictions. Scaling uses
-    all nodes (feature-only, no labels), standard in transductive settings.
+    and contain NaNs; without this the GNN produces NaN predictions. By default the
+    scaling statistics use all nodes (feature-only, no labels - the transductive
+    convention used by our published numbers). Pass ``fit_mask`` to fit the
+    statistics on train-period nodes only (the deployment-honest convention).
     """
     feat = np.nan_to_num(feat, nan=0.0, posinf=0.0, neginf=0.0)
-    mean = feat.mean(axis=0, keepdims=True)
-    std = feat.std(axis=0, keepdims=True)
+    fit = feat[fit_mask] if fit_mask is not None else feat
+    mean = fit.mean(axis=0, keepdims=True)
+    std = fit.std(axis=0, keepdims=True)
     std[std == 0] = 1.0
     scaled: NDArray[Any] = ((feat - mean) / std).astype(np.float32)
     return scaled
+
+
+def aggregate_wallets(waf: pd.DataFrame, feature_window: str, max_step: int) -> pd.DataFrame:
+    """Aggregate per-address-timestep wallet features to one row per address.
+
+    ``feature_window='lifetime'``: mean over the address's whole lifetime (the
+    original convention; leaks post-split activity into train-node features).
+    ``feature_window='pre_split'``: mean over time steps <= ``max_step`` when the
+    address has such rows; addresses first seen after the split keep their own
+    (post-split) statistics, which is legitimate - they are test-period nodes.
+    """
+    body = waf.drop(columns=["Time step"])
+    agg_all: pd.DataFrame = body.groupby("address").mean(numeric_only=True)
+    if feature_window == "lifetime":
+        return agg_all
+    if feature_window != "pre_split":
+        raise ValueError(f"unknown feature_window '{feature_window}'")
+    pre = waf[waf["Time step"] <= max_step].drop(columns=["Time step"])
+    agg_pre: pd.DataFrame = pre.groupby("address").mean(numeric_only=True)
+    out: pd.DataFrame = agg_all.copy()
+    out.loc[agg_pre.index] = agg_pre
+    return out
 
 
 def _map_edges(
@@ -72,19 +97,29 @@ def _map_edges(
 def build_hetero(
     root: str | Path = "data/raw/elliptic_pp",
     cache: str | Path = "data/processed/elliptic_pp.pt",
+    feature_window: str = "lifetime",
 ) -> HeteroData:
-    """Build (and cache) the Elliptic++ heterogeneous graph."""
+    """Build (and cache) the Elliptic++ heterogeneous graph.
+
+    ``feature_window='pre_split'`` builds the deployment-honest variant: wallet
+    features aggregated over pre-split activity only, and z-scoring statistics fit
+    on train-period nodes only. ``'lifetime'`` reproduces the original convention.
+    """
     cache_path = Path(cache)
+    if feature_window != "lifetime":
+        cache_path = cache_path.with_name(cache_path.stem + f"_{feature_window}.pt")
     if cache_path.exists():
         return torch.load(cache_path, weights_only=False)
 
     root = Path(root)
+    honest = feature_window == "pre_split"
 
     # --- Transaction nodes ---------------------------------------------------
     txf = pd.read_csv(root / "txs_features.csv")
     tx_ids = txf["txId"].to_numpy()
     tx_time = txf["Time step"].to_numpy().astype(np.int64)
-    tx_feat = _clean_features(txf.drop(columns=["txId", "Time step"]).to_numpy(dtype=np.float32))
+    tx_raw = txf.drop(columns=["txId", "Time step"]).to_numpy(dtype=np.float32)
+    tx_feat = _clean_features(tx_raw, fit_mask=(tx_time <= TRAIN_MAX_TIMESTEP) if honest else None)
     tx_index = _index_map(tx_ids)
 
     txc = pd.read_csv(root / "txs_classes.csv").set_index("txId")["class"]
@@ -96,11 +131,14 @@ def build_hetero(
     # --- Address nodes (features aggregated per unique address) --------------
     waf = pd.read_csv(root / "wallets_features.csv")
     first_seen = waf.groupby("address")["Time step"].min()  # split by first appearance
-    addr_agg = waf.drop(columns=["Time step"]).groupby("address").mean(numeric_only=True)
+    addr_agg = aggregate_wallets(waf, feature_window, TRAIN_MAX_TIMESTEP)
     addr_ids = addr_agg.index.to_numpy()
-    addr_feat = _clean_features(addr_agg.to_numpy(dtype=np.float32))
-    addr_index = _index_map(addr_ids)
     addr_time = first_seen.reindex(addr_ids).to_numpy().astype(np.int64)
+    addr_feat = _clean_features(
+        addr_agg.to_numpy(dtype=np.float32),
+        fit_mask=(addr_time <= TRAIN_MAX_TIMESTEP) if honest else None,
+    )
+    addr_index = _index_map(addr_ids)
 
     wac = pd.read_csv(root / "wallets_classes.csv").set_index("address")["class"]
     addr_cls = wac.reindex(addr_ids).to_numpy()
