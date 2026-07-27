@@ -16,17 +16,23 @@ PR-AUC by +0.20 to +0.52 across four models and two tasks: under the random spli
 vanilla GraphSAGE reaches F1 0.86 and XGBoost reaches PR-AUC 0.987 / F1 0.955 - squarely
 in the reported "SOTA" range - while the identical models score far lower under temporal
 evaluation. The inflation generalizes from the Elliptic transaction task to the
-Elliptic++ address task (+0.52) and is robust across seeds. Critically, a cross-domain
-control - DGraph-Fin, a temporally *stable* fintech graph - shows *no* inflation
-(+0.002), isolating the cause: the inflation is driven by temporal distribution shift,
-not by random splitting per se, which sharpens the warning for shifting benchmarks like
-Elliptic. Under the only comparable protocol - illicit-class F1 with a temporal split -
-gradient-boosted trees still beat graph neural networks by 10+ points, reproducing the
-original 2019 benchmark. We further characterize the field's genuine open problem, the
-post-time-step-43 "dark-market shutdown" distribution shift, under which per-window
-PR-AUC collapses to ~0.01 and which no surveyed method closes, and we report novel but
-negative attempts to address it with a USAD-style adversarial graph autoencoder and a
-supervised domain-adversarial GNN (four variants, all failing). We recommend that graph-fraud papers report
+Elliptic++ address task (+0.50 under a deployment-honest feature protocol) and is
+robust across seeds (e.g. GraphSAGE +0.410 +/- 0.041, n=5). We then **decompose** the
+gap with two controls: a prevalence-matched random test set isolates a small base-rate
+component (+0.026 GNN / +0.005 XGBoost), and an inductive ablation - removing all
+test nodes from the graph during training - measures the graph-specific
+"message-passing leakage" we ourselves hypothesized at **zero** (-0.000 +/- 0.007).
+The dominant component (+0.384 GNN / +0.189 XGBoost) is **distribution access**:
+random splits let models train on the test period's distribution, and the models that
+generalize worst across temporal shift (GNNs) gain the most. A cross-domain control
+(DGraph-Fin, temporally stable) is consistent: essentially no PR-AUC inflation
+(+0.002) where there is no shift to access. Under the only comparable protocol -
+illicit-class metrics with a temporal split - gradient-boosted trees still beat graph
+neural networks (reproducing the 2019 benchmark; a 12-config GNN tuning sweep narrows
+but does not close the gap). We further characterize the field's genuine open
+problem, the post-time-step-43 "dark-market shutdown" shift, and report novel but
+negative attempts to address it (a USAD-style adversarial graph autoencoder and a
+supervised domain-adversarial GNN; four variants, all failing). We recommend that graph-fraud papers report
 illicit-class F1 / PR-AUC under a strict temporal split and treat the post-shift window
 as the real benchmark.
 
@@ -93,14 +99,27 @@ The same models under a random split (Elliptic transactions):
 | GAT | 0.332 | 0.811 | +0.479 | 0.757 |
 | XGBoost | 0.790 | **0.987** | +0.197 | **0.955** |
 
-Under the random split every model reaches "SOTA-looking" numbers; XGBoost's 0.987 / 0.955
-matches the reported ~0.98. GNNs inflate more than XGBoost, consistent with a double leak:
-the random split leaks labels *and* lets message passing cross the train/test boundary. The
-effect generalizes to the Elliptic++ **address** task (heterogeneous graph, 822k nodes):
-PR-AUC 0.456 -> 0.974, F1 0.529 -> 0.925 (+0.518). It is also robust across seeds: for
-GraphSAGE over three seeds the inflation is **+0.427 +/- 0.043 PR-AUC** (temporal 0.495 +/-
-0.036 vs random 0.922 +/- 0.008). The inflation is therefore systematic across models,
-tasks, and seeds - not an artifact of any single configuration.
+Under the random split every model reaches "SOTA-looking" numbers; XGBoost's F1 0.955 /
+PR-AUC 0.987 sits inside the literature's reported ~0.90-0.98 band. Over 5 seeds
+(mean +/- std) the inflation is: GCN +0.553 +/- 0.055, GAT +0.478 +/- 0.036, GraphSAGE
++0.410 +/- 0.041, XGBoost +0.195 +/- 0.001 - systematic across models and seeds. The
+effect generalizes to the Elliptic++ **address** task (heterogeneous graph, 822k
+nodes) and survives a deployment-honest feature protocol (wallet features aggregated
+over pre-split activity only; train-only scaling): PR-AUC 0.469 -> 0.966 (+0.497).
+
+**Decomposing the gap (the central experiment).** Two controls, threshold-free
+PR-AUC, 5 seeds. (i) Matching the random test set's prevalence to the temporal
+test's (6.5%) isolates a small **base-rate** component: +0.026 (SAGE) / +0.005
+(XGBoost). (ii) An **inductive ablation** - all test nodes removed from the graph
+during training, so no test feature or test-adjacent edge is visible - measures the
+graph-specific "double leak" we ourselves initially hypothesized: it is **zero**
+(0.894 vs 0.894; -0.000 +/- 0.007). The dominant component is **distribution
+access** (+0.384 SAGE / +0.189 XGBoost): a random split trains the model on examples
+drawn from the test period, teaching it the shifted distribution - an advantage no
+deployed model can have. GNNs inflate more than XGBoost *not* through a
+message-passing leak but because their temporal generalization is weaker, so
+distribution access rescues them more. We report this as an explicit self-correction:
+the mechanism we proposed was measured and refuted by our own ablation.
 
 **A cross-domain negative control isolates the cause.** On DGraph-Fin (3.7M nodes, a
 Chinese fintech social graph with a temporally *stable* fraud rate), the same GraphSAGE

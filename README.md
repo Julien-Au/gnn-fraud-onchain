@@ -233,26 +233,32 @@ Mirage"*):
   split, **every model reaches "SOTA-looking" numbers** - XGBoost hits F1 0.955 /
   PR-AUC 0.987 (inside the literature's reported ~0.90-0.98 F1 band), GraphSAGE F1
   0.86 - then collapses under the honest temporal split. Same models, only the split
-  changed. GNNs inflate *more* (+0.44-0.51 PR-AUC) than XGBoost (+0.20), consistent
-  with a double leak (labels **and** message passing crossing the train/test
-  boundary) - a hypothesis we state but have not yet isolated by ablation. Note the
-  measured gap bundles leakage with prevalence and covariate shift (temporal test is
-  6.5% illicit vs 9.8% random); decomposing these components is in progress (see
-  [`docs/research-log.md`](docs/research-log.md)).
+  changed. Over 5 seeds (mean +/- std):
 
   | Model | Temporal PR-AUC | Random PR-AUC | Inflation |
   |---|---|---|---|
-  | GCN | 0.294 | 0.800 | +0.506 |
-  | GraphSAGE | 0.488 | 0.925 | +0.437 |
-  | GAT | 0.332 | 0.811 | +0.479 |
-  | XGBoost | 0.790 | **0.987** | +0.197 |
+  | GCN | 0.265 +/- 0.051 | 0.818 +/- 0.009 | +0.553 +/- 0.055 |
+  | GraphSAGE | 0.510 +/- 0.035 | 0.920 +/- 0.007 | +0.410 +/- 0.041 |
+  | GAT | 0.297 +/- 0.054 | 0.775 +/- 0.032 | +0.478 +/- 0.036 |
+  | XGBoost | 0.791 +/- 0.001 | **0.986 +/- 0.001** | +0.195 +/- 0.001 |
+
+- **Decomposed, the gap is mostly "distribution access" - and our own "double leak"
+  hypothesis is refuted.** With a prevalence-matched control and an inductive
+  ablation (all test nodes removed from the graph during training), the GraphSAGE
+  gap splits into: base-rate **+0.026**, message-passing leakage **0.000 +/- 0.007**
+  (we hypothesized this graph-specific channel, measured it, and it is null), and
+  **distribution access +0.384** - random splits train the model on the test
+  period's distribution, an advantage no deployed model can have. GNNs inflate more
+  than XGBoost because they generalize worse across the temporal shift, not because
+  of a graph leak (`gnn-fraud decompose`; [`docs/research-log.md`](docs/research-log.md)).
 
   ![leakage](docs/media/results/leakage_multi.png)
 
   **It generalizes to a second task, and a cross-domain control points at the mechanism.**
   On Elliptic++ **address** classification (heterogeneous, 822k nodes) the same inflation
-  appears (+0.52, single seed); on the Elliptic *transaction* task it is +0.427 +/- 0.043
-  over 3 seeds (GraphSAGE). On **DGraph-Fin** (3.7M-node fintech graph with a *temporally
+  appears and survives a deployment-honest feature protocol (pre-split wallet
+  aggregation, train-only scaling): PR-AUC 0.469 -> 0.966, **+0.497**. On **DGraph-Fin**
+  (3.7M-node fintech graph with a *temporally
   stable* fraud rate) the PR-AUC inflation vanishes (+0.002) - though ROC-AUC still
   inflates by +0.031, and both models sit near the PR-AUC floor, so this control is
   suggestive rather than decisive. The pattern is consistent with the inflation being a

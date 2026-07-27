@@ -231,6 +231,53 @@ PR-AUC); where the distribution is stable (DGraph), it is negligible. The practi
 warning stands and is sharper: *on temporally-shifting fraud graphs, report a temporal
 split* - and the popular Elliptic benchmark is exactly such a case.
 
+## Exp 10 - Gap decomposition (5 seeds): our "double leak" hypothesis REFUTED
+
+**Question.** What fraction of the temporal-vs-random gap is actual leakage, versus
+prevalence arithmetic, versus "distribution access" (training on test-period data)?
+
+**Setup.** `gnn-fraud decompose`: four arms on threshold-free PR-AUC, 5 seeds -
+temporal / random / random with test prevalence matched to the temporal test (6.5%) /
+prevalence-matched with **inductive training** (all test nodes removed from the graph,
+so no test feature or edge is visible during training).
+
+**Result (GraphSAGE, mean +/- std over 5 seeds):**
+| Component of the +0.410 +/- 0.041 gap | Value |
+|---|---|
+| Base-rate (prevalence arithmetic) | +0.026 +/- 0.005 |
+| **Message-passing leakage (our "double leak")** | **-0.000 +/- 0.007 - ZERO** |
+| **Distribution access (training on the test period)** | **+0.384 +/- 0.044 - dominant** |
+
+XGBoost (no graph): total +0.195 +/- 0.001 = base-rate +0.005 + distribution access
++0.189.
+
+**Conclusion (honest self-correction).** The inductive ablation (0.894 vs 0.894 -
+identical) refutes the message-passing "double leak" we had hypothesized: there is no
+graph-specific leakage channel here. GNNs inflate more than XGBoost (+0.41-0.55 vs
++0.20) because they **generalize worse across the temporal shift** - their temporal
+arm is weaker - so random-split "distribution access" rescues them more. The
+evaluation flaw in the literature is real, but its mechanism is distribution access,
+not graph leakage. We proposed the double-leak, measured it, and it is null; the
+paper now says so.
+
+## Exp 11 - GNN tuning sweep (12 configs, temporal val selection): modest
+
+**Result.** Best SAGE (hidden 128, lr 0.005, dropout 0.5): test PR-AUC 0.506 / F1
+0.486 (vs 0.488 / 0.422 default). Best GCN (256/0.01/0.3): PR-AUC 0.274. Tuning
+improves F1 by ~6 points but does **not** close the ~20-point gap to the literature's
+honest-protocol GNN F1 (~0.69); the residual likely reflects protocol/training-detail
+differences in those (unreplicated) reports. Reported as measured.
+
+## Exp 12 - Deployment-honest hetero arm (pre_split features): conclusion robust
+
+**Setup.** `leakage-hetero --feature-window pre_split`: wallet features aggregated
+over pre-split activity only; z-scoring fit on train-period nodes only (fixes the
+committee-identified feature leakage in the "honest" arm).
+
+**Result.** Temporal 0.469 / random 0.966 -> inflation **+0.497**, vs +0.518 with
+lifetime features (temporal 0.456). Fixing the feature leak barely moves either arm:
+the address-task inflation is robust to the honest feature protocol.
+
 ## Overall verdict
 
 Two clean contributions and four honest negatives. **C1 (the leakage-free reality
@@ -241,3 +288,12 @@ window is unsolved. **C2 (a working drift-robust method) remains elusive**: four
 principled attempts (reconstruction, rolling-normal, unsupervised domain-adversarial,
 supervised domain-adversarial) all fail. This is reported honestly - the value is a
 rigorous reality check plus a mapped-out set of what does not work.
+
+**Post-decomposition update (Exp 10-12).** The central claim is now sharper and
+partly self-corrected: the temporal-vs-random gap decomposes into a small base-rate
+term, a **null** message-passing-leakage term (our own double-leak hypothesis,
+refuted by the inductive ablation), and a dominant **distribution-access** term -
+random splits let models train on the test period's distribution, and models that
+generalize worst across the shift (GNNs) gain the most. All headline cells are now
+multi-seed; the hetero conclusion survives the deployment-honest feature protocol.
+This is the paper's core finding.
