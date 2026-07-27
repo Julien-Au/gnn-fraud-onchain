@@ -595,6 +595,90 @@ def leakage_hetero(
 
 
 @app.command()
+def train_dann(
+    root: str = "data/raw/elliptic",
+    results_path: str = "docs/results/dann.json",
+    epochs: int = 200,
+    gamma: float = 1.0,
+    seed: int = 42,
+) -> None:
+    """Supervised drift-robust GNN: domain-adversarial GraphSAGE. Requires ``gnn``.
+
+    The baseline to beat is plain GraphSAGE (temporal PR-AUC 0.488).
+    """
+    import json
+    from pathlib import Path
+
+    from gnn_fraud.ingestion.elliptic import load_elliptic, node_timesteps
+    from gnn_fraud.train.dann_trainer import train_dann as run_dann
+
+    data = load_elliptic(root)
+    timesteps = node_timesteps(root)
+    console.print("[bold]Training DANN-GraphSAGE (supervised, domain-adversarial)...[/bold]")
+    out = run_dann(data, timesteps, epochs=epochs, gamma=gamma, seed=seed)
+    console.print(
+        f"  dann-sage: PR-AUC={out.metrics.pr_auc:.4f} F1={out.metrics.f1:.4f} "
+        f"(best epoch {out.best_epoch}, val PR-AUC {out.best_val_pr_auc:.4f}) "
+        f"[plain SAGE baseline: 0.488]"
+    )
+    out_path = Path(results_path)
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    out_path.write_text(
+        json.dumps({"dann-sage": out.metrics.as_row()}, indent=2) + "\n", encoding="utf-8"
+    )
+    console.print(f"Saved result to {out_path}")
+
+
+@app.command()
+def leakage_seeds(
+    root: str = "data/raw/elliptic",
+    model: str = "sage",
+    seeds: str = "42,43,44",
+    results_path: str = "docs/results/leakage_seeds.json",
+) -> None:
+    """Multi-seed robustness of the leakage inflation (mean +/- std). Requires ``gnn``."""
+    import json
+    import statistics
+    from pathlib import Path
+
+    from gnn_fraud.experiments.leakage import run_leakage_experiment
+    from gnn_fraud.ingestion.elliptic import load_elliptic, node_timesteps
+
+    data = load_elliptic(root)
+    timesteps = node_timesteps(root)
+    seed_list = [int(s) for s in seeds.split(",") if s.strip()]
+    runs = []
+    for s in seed_list:
+        console.print(f"[bold]Leakage seed {s}...[/bold]")
+        r = run_leakage_experiment(data, timesteps, model, seed=s)
+        runs.append(r)
+        console.print(
+            f"  seed {s}: temporal={r['temporal']['pr_auc']:.4f} random={r['random']['pr_auc']:.4f}"
+        )
+    t = [float(r["temporal"]["pr_auc"]) for r in runs]
+    rd = [float(r["random"]["pr_auc"]) for r in runs]
+    infl = [b - a for a, b in zip(t, rd, strict=False)]
+
+    def ms(v: list[float]) -> str:
+        return f"{statistics.mean(v):.3f} +/- {statistics.pstdev(v):.3f}"
+
+    console.print(f"temporal PR-AUC: {ms(t)}")
+    console.print(f"random   PR-AUC: {ms(rd)}")
+    console.print(f"[bold red]inflation: {ms(infl)} PR-AUC (n={len(seed_list)} seeds)[/bold red]")
+    out_path = Path(results_path)
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    out_path.write_text(
+        json.dumps(
+            {"model": model, "seeds": seed_list, "temporal": t, "random": rd, "inflation": infl},
+            indent=2,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    console.print(f"Saved to {out_path}")
+
+
+@app.command()
 def smoke_train() -> None:
     """Run a tiny 1-epoch smoke train (requires the ``gnn`` extra).
 

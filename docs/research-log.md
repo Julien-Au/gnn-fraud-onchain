@@ -171,3 +171,43 @@ makes the leakage critique (C1) robust, not anecdotal.
 transaction task (4 models) and the Elliptic++ address task - a solid, generalizable,
 publishable contribution. Optional further strengthening: a fully different-domain
 dataset (DGraph-Fin, gated behind registration).
+
+---
+
+## Exp 7 - Supervised drift-robust GNN (domain-adversarial DANN): NEGATIVE
+
+**Hypothesis.** Keep the strong supervised signal (unlike the unsupervised AEs) and add
+a gradient-reversal time-period discriminator, so the representation is time-invariant
+and generalizes better to the post-shift test period. Should beat plain GraphSAGE (0.488).
+
+**Setup.** `gnn-fraud train-dann`: GraphSAGE encoder + supervised classifier + GRL
+time-period head; DANN lambda ramp; temporal split; seed 42.
+
+**Result.** PR-AUC **0.364**, F1 0.388 - **below** plain GraphSAGE (0.488). Validation
+PR-AUC 0.85 but test 0.36: the domain-adversarial constraint removed useful signal
+rather than improving generalization; the shift still dominates.
+
+**Conclusion.** The supervised time-invariance approach also fails to beat the baseline.
+Across four method attempts (unsupervised USAD x3, supervised DANN x1), none beats the
+honest baselines: enforcing time-invariance does not solve Elliptic's regime-change
+shift. This closes the bounded method-exploration with an honest negative.
+
+## Exp 8 - Multi-seed robustness of the leakage inflation (C1 strengthened): STRONG
+
+**Setup.** `gnn-fraud leakage-seeds` (GraphSAGE, seeds 42/43/44): temporal vs random split.
+
+**Result.** temporal PR-AUC 0.495 +/- 0.036; random 0.922 +/- 0.008; **inflation
++0.427 +/- 0.043 PR-AUC (n=3)**. The leakage inflation is robust across seeds, not a
+single-seed artifact. With the Elliptic++ address generalization (+0.52), C1 is
+statistically and across-task solid.
+
+## Overall verdict
+
+Two clean contributions and four honest negatives. **C1 (the leakage-free reality
+check) is the real, defensible, publishable result**: the reported Elliptic/Elliptic++
+SOTA is a leakage artifact (inflation +0.20 to +0.52 PR-AUC, robust across models, tasks,
+and seeds); under honest temporal evaluation trees still beat GNNs and the post-shift
+window is unsolved. **C2 (a working drift-robust method) remains elusive**: four
+principled attempts (reconstruction, rolling-normal, unsupervised domain-adversarial,
+supervised domain-adversarial) all fail. This is reported honestly - the value is a
+rigorous reality check plus a mapped-out set of what does not work.

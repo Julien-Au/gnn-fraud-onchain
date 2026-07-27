@@ -92,6 +92,7 @@ module = [
   "gnn_fraud.models.temporal",
   "gnn_fraud.models.hetero",
   "gnn_fraud.models.graph_usad",
+  "gnn_fraud.models.dann",
 ]
 disallow_subclassing_any = false
 warn_return_any = false

@@ -93,7 +93,10 @@ Under the random split every model reaches "SOTA-looking" numbers; XGBoost's 0.9
 matches the reported ~0.98. GNNs inflate more than XGBoost, consistent with a double leak:
 the random split leaks labels *and* lets message passing cross the train/test boundary. The
 effect generalizes to the Elliptic++ **address** task (heterogeneous graph, 822k nodes):
-PR-AUC 0.456 -> 0.974, F1 0.529 -> 0.925 (+0.518).
+PR-AUC 0.456 -> 0.974, F1 0.529 -> 0.925 (+0.518). It is also robust across seeds: for
+GraphSAGE over three seeds the inflation is **+0.427 +/- 0.043 PR-AUC** (temporal 0.495 +/-
+0.036 vs random 0.922 +/- 0.008). The inflation is therefore systematic across models,
+tasks, and seeds - not an artifact of any single configuration.
 
 ### 4.3 The real open problem: the post-shift collapse
 
@@ -109,8 +112,13 @@ graph autoencoder (GraphUSAD) and two drift-aware variants (rolling-normal windo
 domain-adversarial time-invariant representation via gradient reversal). All three score
 PR-AUC ~0.037 (below the base rate), matching a plain tabular autoencoder: under this
 regime-change shift, reconstruction error tracks the licit distribution's drift rather than
-illicitness, regardless of the normal window or latent invariance. The novel method does
-not work; the reconstruction frame is the wrong tool for this shift.
+illicitness, regardless of the normal window or latent invariance. We also tried a
+*supervised* drift-robust variant - a domain-adversarial GraphSAGE (DANN) that enforces a
+time-invariant representation for the supervised classifier - which scored PR-AUC 0.364,
+*below* the plain GraphSAGE baseline (0.488): the invariance constraint removed useful
+signal rather than improving generalization. Across four principled attempts, enforcing
+time-invariance does not solve the shift. The novel method does not work; we report this
+honestly, as it maps out what does not, and leaves the post-shift problem open.
 
 ## 5. Discussion and recommendations
 
