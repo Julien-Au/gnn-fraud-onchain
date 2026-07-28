@@ -231,6 +231,23 @@ CI $[0.149, 0.281]$, $p=1/32$) because their temporal generalization is weaker,
 not because of a graph-specific leak. We report this as an explicit
 self-correction.
 
+\subsection{The mechanism's falsifiable prediction: inflation concentrates in the
+shifted window}
+If distribution access drives the inflation, it should be largest where the
+distribution shift is largest: the post-shutdown window (steps $\geq$43), where the
+labeled fraud prevalence collapses from 9.2\% to 2.5\%. Splitting the test period
+(GraphSAGE, 5 seeds): pre-shutdown, temporal $0.651\pm0.042$ vs random
+$0.895\pm0.018$ (inflation $+0.244\pm0.059$); post-shutdown, temporal
+$0.042\pm0.001$ vs random $0.348\pm0.033$ (inflation $+0.306\pm0.034$). The
+absolute difference is directional but not conclusive (paired $+0.062\pm0.058$,
+sign-flip $p=0.0625$, 4/5 seeds). The relative picture is unambiguous: the
+random-over-temporal ratio is $1.4\times$ pre-shutdown but $8.2\times$
+post-shutdown, where the temporal model sits essentially at the no-skill floor
+(0.042 vs a 0.025 base rate) while the random-split model retains substantial
+skill (0.348) -- skill it can only have acquired by training on the post-shutdown
+period itself. The prediction is confirmed in the strong (relative) sense and
+reported with the weaker absolute test alongside.
+
 \subsection{A temporally stable control}
 On DGraph-Fin \citep{huang2022dgraph} (3.7M nodes, timestamped edges, temporally
 stable $\sim$1.3\% fraud rate), the same GraphSAGE shows essentially no PR-AUC

@@ -346,6 +346,26 @@ The reviewer demand that forced this (multi-seed everything) has now corrected t
 of our own conclusions (the double-leak mechanism and the DANN harm claim) - the
 process is doing exactly what it is for.
 
+## Exp 16 - Windowed inflation: the mechanism's prediction, tested (5 seeds)
+
+**Prediction.** If distribution access drives the inflation, it must concentrate in
+the post-shutdown window (t >= 43) where the shift is largest.
+
+**Result (GraphSAGE):**
+| Window | Prevalence | Temporal | Random | Inflation |
+|---|---|---|---|---|
+| Pre-shutdown (35-42) | 9.2% | 0.651 +/- 0.042 | 0.895 +/- 0.018 | +0.244 +/- 0.059 |
+| Post-shutdown (43-49) | 2.5% | **0.042 +/- 0.001** | **0.348 +/- 0.033** | +0.306 +/- 0.034 |
+
+**Read honestly, both ways.** Absolute: post > pre is directional (paired +0.062
++/- 0.058, sign-flip p = 0.0625, 4/5 seeds) - suggestive, not conclusive at 5%.
+Relative: unambiguous - the random/temporal ratio goes from 1.4x pre to **8.2x
+post**, where the temporal model sits at the no-skill floor (0.042 vs 0.025 base
+rate) while the random-split model keeps 0.348, skill it can only have learned
+from training on the post-shutdown period itself. The mechanism's prediction is
+confirmed in the strong relative sense; the weaker absolute test is reported
+alongside. (`gnn-fraud leakage-windowed`, docs/results/leakage_windowed.json)
+
 **Post-decomposition update (Exp 10-12).** The central claim is now sharper and
 partly self-corrected: the temporal-vs-random gap decomposes into a small base-rate
 term, a **null** message-passing-leakage term (our own double-leak hypothesis,
