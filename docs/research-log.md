@@ -366,6 +366,27 @@ from training on the post-shutdown period itself. The mechanism's prediction is
 confirmed in the strong relative sense; the weaker absolute test is reported
 alongside. (`gnn-fraud leakage-windowed`, docs/results/leakage_windowed.json)
 
+## Exp 17 - AMLworld HI-Small (4th dataset): the dose-response middle point
+
+**Setup.** `gnn-fraud leakage-amlworld`: 5,078,345 synthetic transactions (IBM
+AMLworld, complete ground truth, 0.102% laundering), tabular XGBoost, temporal
+(60/10/30 by timestamp) vs stratified random split, 3 seeds.
+
+**Result.** Temporal PR-AUC 0.082 +/- 0.002 vs random 0.206 +/- 0.006 ->
+**inflation +0.124 +/- 0.007**. Prevalence drifts across the stream: 0.075%
+(train window) -> 0.110% (val) -> 0.152% (test) - the generator ramps laundering
+up over time, i.e. moderate drift.
+
+**Why this is the strongest mechanism evidence yet.** Across four datasets the
+inflation now tracks the drift magnitude like a dose-response:
+DGraph (stable) +0.001 < AMLworld (2x prevalence drift) +0.124 < Elliptic-family
+(regime change) +0.41 to +0.55. And on AMLworld the base-rate effect runs
+AGAINST the inflation (temporal test prevalence 0.152% > random test 0.102%, so
+the temporal arm has the higher PR floor), meaning the +0.124 is distribution
+access net of an adverse base-rate term. Caveat: three points on the "dose" axis
+across different domains and model classes - a consistent pattern, not a fitted
+law.
+
 **Post-decomposition update (Exp 10-12).** The central claim is now sharper and
 partly self-corrected: the temporal-vs-random gap decomposes into a small base-rate
 term, a **null** message-passing-leakage term (our own double-leak hypothesis,

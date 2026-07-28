@@ -248,16 +248,29 @@ skill (0.348) -- skill it can only have acquired by training on the post-shutdow
 period itself. The prediction is confirmed in the strong (relative) sense and
 reported with the weaker absolute test alongside.
 
-\subsection{A temporally stable control}
-On DGraph-Fin \citep{huang2022dgraph} (3.7M nodes, timestamped edges, temporally
-stable $\sim$1.3\% fraud rate), the same GraphSAGE shows essentially no PR-AUC
-inflation ($+0.001\pm0.001$ over three seeds), consistent with the mechanism:
-where the distribution does not shift, there is nothing to access. A wider model
-(hidden dimension 128) behaves identically (PR-AUC inflation $+0.004$; ROC-AUC
-$+0.055$). Caveats stated plainly: ROC-AUC does inflate ($+0.031$ to $+0.055$),
-both arms sit near the PR-AUC floor at this model strength, and GADBench reports
-strong GNNs on DGraph-Fin, so this control is supporting evidence rather than
-proof.
+\subsection{Cross-domain controls: a dose-response pattern}
+Two additional datasets bracket the drift axis. On DGraph-Fin
+\citep{huang2022dgraph} (3.7M nodes, timestamped edges, temporally stable
+$\sim$1.3\% fraud rate), the same GraphSAGE shows essentially no PR-AUC inflation
+($+0.001\pm0.001$ over three seeds): where the distribution does not shift, there
+is nothing to access. A wider model (hidden dimension 128) behaves identically
+(PR-AUC inflation $+0.004$; ROC-AUC $+0.055$). Caveats stated plainly: ROC-AUC
+does inflate ($+0.025\pm0.006$; up to $+0.055$ at width 128), both arms sit near
+the PR-AUC floor at this model strength, and GADBench reports strong GNNs on
+DGraph-Fin, so this control is supporting evidence rather than proof.
+
+On IBM AMLworld HI-Small (5.08M synthetic transactions with complete ground
+truth, 0.102\% laundering; tabular XGBoost, three seeds), whose generator drifts
+moderately (laundering prevalence 0.075\% $\rightarrow$ 0.152\% across the
+stream), the inflation is intermediate: temporal PR-AUC $0.082\pm0.002$ versus
+random $0.206\pm0.006$ ($+0.124\pm0.007$). Notably the base-rate effect runs
+\emph{against} this inflation (the temporal test window has the \emph{higher}
+prevalence), so the $+0.124$ is distribution access net of an adverse base-rate
+term. Across four datasets the inflation thus tracks the drift magnitude: stable
+(DGraph) $+0.001$; moderate drift (AMLworld) $+0.124$; regime change (Elliptic
+family) $+0.41$ to $+0.55$. Three points across different domains and model
+classes are a consistent pattern rather than a fitted law, but the dose-response
+direction is exactly what the distribution-access mechanism predicts.
 
 \subsection{The unsolved post-shift regime and negative method results}
 Under the temporal protocol, a rolling per-window backtest of EvolveGCN-O

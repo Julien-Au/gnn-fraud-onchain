@@ -120,6 +120,25 @@ Not required for the default pipeline; a track to demonstrate real ingestion.
 - **Status**: used to reproduce the leakage critique cross-domain (not for a model
   claim); cite the NeurIPS'22 paper.
 
+## Fourth dataset: IBM AMLworld (HI-Small)
+
+- **What**: Synthetic-but-realistic transaction streams with complete ground-truth
+  money-laundering labels, from IBM's agent-based AMLworld generator. Used as the
+  moderate-drift point of the cross-dataset dose-response (its laundering
+  prevalence ramps 0.075% -> 0.152% across the stream).
+- **Scale (verified at ingestion)**: HI-Small variant, 5,078,345 timestamped
+  transactions, 5,177 laundering (0.102%); edge-level labels.
+- **Source / paper**: Altman et al., "Realistic Synthetic Financial Transactions
+  for Anti-Money Laundering Models", NeurIPS 2023 Datasets & Benchmarks (arXiv
+  2306.16424); data distributed via Kaggle
+  (kaggle.com/datasets/ealtman2019/ibm-transactions-for-anti-money-laundering-aml).
+- **License / access**: Kaggle-gated (account + dataset terms); downloaded by the
+  project owner; raw CSVs gitignored and never redistributed. Synthetic data, so
+  no personal-data concerns; cite the NeurIPS paper.
+- **Status**: used for the tabular leakage experiment (`gnn-fraud
+  leakage-amlworld`); the larger variants (Medium/Large, up to 17 GB) are in the
+  owner's archive but not used.
+
 ## Integrity rules (recap)
 
 - Provenance + license recorded here for anything we load.
