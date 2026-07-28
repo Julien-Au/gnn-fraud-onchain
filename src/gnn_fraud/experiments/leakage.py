@@ -59,8 +59,13 @@ def _fit_with_masks(
     epochs: int = 200,
     patience: int = 20,
     seed: int = 42,
+    out_probs: list[torch.Tensor] | None = None,
 ) -> tuple[BinaryMetrics, float]:
-    """Transductive GNN training with arbitrary masks; returns (test metrics, best val PR-AUC)."""
+    """Transductive GNN training with arbitrary masks; returns (test metrics, best val PR-AUC).
+
+    If ``out_probs`` is a list, the full-graph positive-class probability vector of
+    the selected model is appended to it (for windowed / secondary evaluations).
+    """
     torch.manual_seed(seed)
     y = data.y
     labels = y[train_mask]
@@ -101,6 +106,8 @@ def _fit_with_masks(
     p = prob()
     thr = best_f1_threshold(y_val, p[val_mask].cpu().numpy())
     metrics = evaluate_binary(y[test_mask].cpu().numpy(), p[test_mask].cpu().numpy(), thr)
+    if out_probs is not None:
+        out_probs.append(p.detach().cpu())
     return metrics, float(best_val)
 
 

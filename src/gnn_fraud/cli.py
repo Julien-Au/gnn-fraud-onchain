@@ -878,6 +878,89 @@ def sweep_temporal(
 
 
 @app.command()
+def recipe(
+    root: str = "data/raw/elliptic",
+    seeds: str = "42,43,44,45,46",
+    results_path: str = "docs/results/recipe.json",
+) -> None:
+    """Replicate the published high-score recipe (random split + aggregate metrics)
+    with a generic XGBoost, side by side with the honest protocol. Requires
+    ``gnn`` + ``boost``."""
+    import json
+    from pathlib import Path
+
+    from gnn_fraud.experiments.recipe import run_recipe
+    from gnn_fraud.ingestion.elliptic import load_elliptic, node_timesteps
+
+    data = load_elliptic(root)
+    timesteps = node_timesteps(root)
+    seed_list = tuple(int(s) for s in seeds.split(",") if s.strip())
+    console.print(f"[bold]Published-recipe replication ({len(seed_list)} seeds)...[/bold]")
+    res = run_recipe(data, timesteps, seeds=seed_list)
+
+    table = Table(title="Published recipe (random split) vs honest protocol (temporal)")
+    for col in ("metric", "recipe (random)", "honest (temporal)"):
+        table.add_column(col, justify="right" if col != "metric" else "left")
+    for k in ("accuracy", "weighted_f1", "micro_f1", "macro_f1", "illicit_f1", "pr_auc"):
+        a = res["recipe_random_split"][k]
+        b = res["honest_temporal_split"][k]
+        table.add_row(
+            k, f"{a['mean']:.4f} +/- {a['sstd']:.4f}", f"{b['mean']:.4f} +/- {b['sstd']:.4f}"
+        )
+    console.print(table)
+
+    out_path = Path(results_path)
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    out_path.write_text(json.dumps(res, indent=2) + "\n", encoding="utf-8")
+    console.print(f"Saved to {out_path}")
+
+
+@app.command()
+def leakage_windowed(
+    root: str = "data/raw/elliptic",
+    model: str = "sage",
+    seeds: str = "42,43,44,45,46",
+    results_path: str = "docs/results/leakage_windowed.json",
+) -> None:
+    """Windowed inflation (pre vs post shutdown): the mechanism's falsifiable
+    prediction. Requires ``gnn``."""
+    import json
+    from pathlib import Path
+
+    from gnn_fraud.experiments.windowed import run_windowed_leakage
+    from gnn_fraud.ingestion.elliptic import load_elliptic, node_timesteps
+
+    data = load_elliptic(root)
+    timesteps = node_timesteps(root)
+    seed_list = tuple(int(s) for s in seeds.split(",") if s.strip())
+    console.print(f"[bold]Windowed inflation ({model}, {len(seed_list)} seeds)...[/bold]")
+    res = run_windowed_leakage(data, timesteps, model_name=model, seeds=seed_list)
+
+    table = Table(title="Inflation by test window (PR-AUC, mean +/- std)")
+    for col in ("window", "prevalence", "temporal", "random", "inflation"):
+        table.add_column(col, justify="right" if col != "window" else "left")
+    for w in ("pre_shutdown", "post_shutdown"):
+        r = res[w]
+        table.add_row(
+            w,
+            f"{res['prevalence'][w]:.2%}",
+            f"{r['temporal']['mean']:.4f} +/- {r['temporal']['sstd']:.4f}",
+            f"{r['random']['mean']:.4f} +/- {r['random']['sstd']:.4f}",
+            f"+{r['inflation']['mean']:.4f} +/- {r['inflation']['sstd']:.4f}",
+        )
+    console.print(table)
+    p = res["prediction"]
+    console.print(
+        f"[bold]Mechanism prediction (post > pre): {p['post_greater_than_pre']} "
+        f"(pre +{p['pre_inflation']:.3f} vs post +{p['post_inflation']:.3f})[/bold]"
+    )
+    out_path = Path(results_path)
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    out_path.write_text(json.dumps(res, indent=2) + "\n", encoding="utf-8")
+    console.print(f"Saved to {out_path}")
+
+
+@app.command()
 def smoke_train() -> None:
     """Run a tiny 1-epoch smoke train (requires the ``gnn`` extra).
 
