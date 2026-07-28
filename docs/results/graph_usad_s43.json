@@ -1,0 +1,14 @@
+{
+  "graph-usad": {
+    "pr_auc": 0.0367,
+    "roc_auc": 0.1795,
+    "f1": 0.122,
+    "precision": 0.065,
+    "recall": 1.0,
+    "threshold": 0.0769,
+    "tp": 1083,
+    "fp": 15587,
+    "fn": 0,
+    "tn": 0
+  }
+}

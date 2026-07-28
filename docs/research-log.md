@@ -183,7 +183,10 @@ and generalizes better to the post-shift test period. Should beat plain GraphSAG
 **Setup.** `gnn-fraud train-dann`: GraphSAGE encoder + supervised classifier + GRL
 time-period head; DANN lambda ramp; temporal split; seed 42.
 
-**Result.** PR-AUC **0.364**, F1 0.388 - **below** plain GraphSAGE (0.488). Validation
+**Result.** PR-AUC **0.364**, F1 0.388 at seed 42 - below plain GraphSAGE (0.488).
+**[CORRECTED by Exp 15]:** over 3 seeds DANN scores 0.462 +/- 0.090, statistically
+indistinguishable from plain SAGE (0.510 +/- 0.039). The "removes signal" reading
+was seed-42 noise; the honest conclusion is "no robustness gain". Validation
 PR-AUC 0.85 but test 0.36: the domain-adversarial constraint removed useful signal
 rather than improving generalization; the shift still dominates.
 
@@ -325,6 +328,23 @@ recipe - no novel architecture required. The table also shows the two tricks
 separately: even under the honest temporal split, ACCURACY still reads 0.97 (the
 majority class dominates), while the honest illicit-F1 is 0.76. Split choice and
 metric choice each contribute to the illusion; together they turn 0.76 into 0.99.
+
+## Exp 15 - Multi-seeding the single-seed cells: one conclusion corrected
+
+Seeds 43/44 added to the previously single-seed results (box batch):
+- **DGraph control (3 seeds): PR inflation +0.0012 +/- 0.0011; ROC +0.0247 +/-
+  0.0063.** The null-PR-inflation control is now seed-robust.
+- **GraphUSAD (3 seeds): 0.0367 +/- 0.0001.** The unsupervised negative is rock
+  stable.
+- **DANN (3 seeds): 0.462 +/- 0.090** (0.364 / 0.540 / 0.482) vs plain SAGE
+  0.510 +/- 0.039. **Self-correction #2:** the earlier "DANN removes signal /
+  below baseline" conclusion was a seed-42 artifact. Honest version: the
+  time-invariance constraint gives NO robustness gain, and whether it hurts is
+  within seed noise. Paper and Exp 7 updated accordingly.
+
+The reviewer demand that forced this (multi-seed everything) has now corrected two
+of our own conclusions (the double-leak mechanism and the DANN harm claim) - the
+process is doing exactly what it is for.
 
 **Post-decomposition update (Exp 10-12).** The central claim is now sharper and
 partly self-corrected: the temporal-vs-random gap decomposes into a small base-rate
