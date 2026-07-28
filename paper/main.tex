@@ -35,7 +35,9 @@ split, and find the random split inflates illicit-class PR-AUC by $+0.195\pm0.00
 (XGBoost) to $+0.553\pm0.062$ (GCN) over five paired seeds (all sign-flip
 permutation $p=1/32$, the minimum at $n{=}5$); under the random split a vanilla
 XGBoost reaches PR-AUC $0.986\pm0.001$ (F1 0.955 at seed 42), squarely in the
-reported ``SOTA'' band. We then \emph{decompose} the gap with two controls. A
+reported ``SOTA'' band -- and under the full published recipe (random split
+\emph{plus} aggregate metrics) it reproduces the headline numbers outright:
+accuracy $0.992$, weighted F1 $0.992$. We then \emph{decompose} the gap with two controls. A
 prevalence-matched random test set isolates a small base-rate component
 ($+0.026$--$0.073$ across GNNs / $+0.005$ XGBoost). An inductive ablation, which
 removes all test nodes from the graph during training, finds the graph-specific
@@ -164,7 +166,17 @@ XGBoost & $0.791\pm0.002$ & $0.986\pm0.001$ & $+0.195\pm0.001$ \\
 Every inflation is significant at the smallest attainable exact permutation level
 ($p=1/32$), with 95\% CIs bounded away from zero (e.g.\ GraphSAGE $[0.344,0.475]$).
 Under the random split, XGBoost reaches PR-AUC $0.986\pm0.001$ (F1 0.955 at seed
-42), inside the literature's reported $\sim$0.90--0.98 band. The effect
+42), inside the literature's reported $\sim$0.90--0.98 band.
+
+\paragraph{The published recipe, replicated exactly.} Following the full published
+recipe -- a stratified random split \emph{and} aggregate metrics -- a generic
+XGBoost reproduces the headline numbers outright (5 seeds): accuracy
+$0.9917\pm0.0002$ and weighted F1 $0.9916\pm0.0002$, matching and slightly
+exceeding reported values such as accuracy 0.9802 / weighted F1 0.9799. The same
+model under the honest protocol scores illicit-F1 $0.756\pm0.007$ / PR-AUC
+$0.791\pm0.002$. Notably, \emph{accuracy remains 0.969 even under the temporal
+split}: metric choice and split choice each contribute to the illusion, and
+together they turn 0.76 into 0.99 with no novel architecture involved. The effect
 generalizes to the Elliptic++ address task (heterogeneous graph, 822k address
 nodes) under a deployment-honest feature protocol (pre-split wallet aggregation,
 train-only scaling): over three seeds, PR-AUC $0.417\pm0.052$ (temporal) versus

@@ -306,6 +306,26 @@ rigorous reality check plus a mapped-out set of what does not work.
   PR-AUC 0.200 (lr 0.005, no clip) vs 0.100 default - tuning helps somewhat but
   every configuration stays far below the honest baselines.
 
+## Exp 14 - Published-recipe replication (5 seeds): the 0.98 reproduced exactly
+
+**Setup.** `gnn-fraud recipe`: a generic XGBoost under the published recipe
+(stratified random split + aggregate metrics) vs the honest protocol.
+
+**Result (mean +/- sample std, n=5):**
+| Metric | Recipe (random split) | Honest (temporal split) |
+|---|---|---|
+| Accuracy | **0.9917 +/- 0.0002** | 0.9692 +/- 0.0012 |
+| Weighted F1 | **0.9916 +/- 0.0002** | 0.9688 +/- 0.0011 |
+| Illicit F1 | 0.9564 +/- 0.0010 | 0.7559 +/- 0.0071 |
+| PR-AUC | 0.9856 +/- 0.0012 | 0.7909 +/- 0.0015 |
+
+**Conclusion.** The literature's ~0.98 headline (e.g. accuracy 0.9802 / weighted F1
+0.9799) is reproduced and slightly exceeded by a generic tabular model under the
+recipe - no novel architecture required. The table also shows the two tricks
+separately: even under the honest temporal split, ACCURACY still reads 0.97 (the
+majority class dominates), while the honest illicit-F1 is 0.76. Split choice and
+metric choice each contribute to the illusion; together they turn 0.76 into 0.99.
+
 **Post-decomposition update (Exp 10-12).** The central claim is now sharper and
 partly self-corrected: the temporal-vs-random gap decomposes into a small base-rate
 term, a **null** message-passing-leakage term (our own double-leak hypothesis,
