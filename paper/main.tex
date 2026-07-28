@@ -145,8 +145,8 @@ Under the random split, XGBoost reaches F1 0.955 / PR-AUC 0.986, inside the
 literature's reported $\sim$0.90--0.98 band. The effect generalizes to the
 Elliptic++ address task (heterogeneous graph, 822k address nodes) under a
 deployment-honest feature protocol (pre-split wallet aggregation, train-only
-scaling): PR-AUC $0.469 \rightarrow 0.966$ ($+0.497$).
-\todo{add multi-seed hetero numbers (batch2: seeds 43, 44)}
+scaling): over three seeds, PR-AUC $0.417\pm0.042$ (temporal) versus
+$0.966\pm0.002$ (random), an inflation of $+0.548\pm0.041$.
 
 \subsection{Decomposing the gap}
 \label{sec:decompose}
@@ -160,43 +160,46 @@ message-passing leakage directly.
 \centering
 \caption{Decomposition of the temporal-versus-random gap (PR-AUC, 5 seeds).}
 \label{tab:decompose}
-\begin{tabular}{lcc}
+\begin{tabular}{lcccc}
 \toprule
-Component & GraphSAGE & XGBoost \\
+Component & GCN & GraphSAGE & GAT & XGBoost \\
 \midrule
-Base rate & $+0.026\pm0.005$ & $+0.005\pm0.001$ \\
-Message-passing leakage & $-0.000\pm0.007$ & n/a \\
-Distribution access & $+0.384\pm0.044$ & $+0.189\pm0.002$ \\
+Base rate & $+0.061\pm0.004$ & $+0.026\pm0.005$ & $+0.073\pm0.011$ & $+0.005\pm0.001$ \\
+Message-passing leakage & $+0.003\pm0.016$ & $-0.000\pm0.007$ & $-0.010\pm0.033$ & n/a \\
+Distribution access & $+0.489\pm0.042$ & $+0.384\pm0.044$ & $+0.415\pm0.044$ & $+0.189\pm0.002$ \\
 \midrule
-Total gap & $+0.410\pm0.041$ & $+0.195\pm0.001$ \\
+Total gap & $+0.553\pm0.055$ & $+0.410\pm0.041$ & $+0.478\pm0.036$ & $+0.195\pm0.001$ \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-The message-passing channel we ourselves hypothesized is \textbf{null}: training
-with test nodes entirely removed from the graph changes random-split PR-AUC by
-$-0.000\pm0.007$ (0.894 versus 0.894). The dominant term is distribution access:
-a random split trains the model on examples drawn from the test period, an
+The message-passing channel we ourselves hypothesized is \textbf{null across all
+three architectures} ($+0.003\pm0.016$ GCN, $-0.000\pm0.007$ GraphSAGE,
+$-0.010\pm0.033$ GAT): training with test nodes entirely removed from the graph
+leaves random-split PR-AUC unchanged. The dominant term everywhere is distribution
+access: a random split trains the model on examples drawn from the test period, an
 advantage no deployed model can have. GNNs inflate more than XGBoost because
 their temporal generalization is weaker, not because of a graph-specific leak.
 We report this as an explicit self-correction.
-\todo{add GCN and GAT decomposition columns (batch2)}
 
 \subsection{A temporally stable control}
 On DGraph-Fin \citep{huang2022dgraph} (3.7M nodes, timestamped edges, temporally
 stable $\sim$1.3\% fraud rate), the same GraphSAGE shows essentially no PR-AUC
 inflation ($0.037 \rightarrow 0.039$, $+0.002$), consistent with the mechanism:
-where the distribution does not shift, there is nothing to access. Caveats stated
-plainly: ROC-AUC does inflate ($+0.031$), both arms sit near the PR-AUC floor, and
-GADBench reports strong GNNs on DGraph-Fin, so this control is supporting evidence
-rather than proof. \todo{add hidden-dim-128 control run (batch2)}
+where the distribution does not shift, there is nothing to access. A wider model
+(hidden dimension 128) behaves identically (PR-AUC inflation $+0.004$; ROC-AUC
+$+0.055$). Caveats stated plainly: ROC-AUC does inflate ($+0.031$ to $+0.055$),
+both arms sit near the PR-AUC floor at this model strength, and GADBench reports
+strong GNNs on DGraph-Fin, so this control is supporting evidence rather than
+proof.
 
 \subsection{The unsolved post-shift regime and negative method results}
 Under the temporal protocol, a rolling per-window backtest of EvolveGCN-O
 \citep{pareja2020evolvegcn} collapses at the dark-market shutdown (steps 44--46:
-PR-AUC $\sim$0.01) and only partially recovers; a learning-rate
-$\times$ gradient-clipping sweep does not change the conclusion.
-\todo{cite evolvegcn\_sweep.json artifact numbers (batch2)}
+PR-AUC $\sim$0.01) and only partially recovers. A learning-rate $\times$
+gradient-clipping sweep (six configurations) improves the aggregate test PR-AUC
+from 0.100 to at best 0.200 (lr $5{\times}10^{-3}$, no clipping), still far below
+every honest baseline; the conclusion is unchanged.
 Four drift-robust variants fail honestly: a USAD-style two-decoder adversarial
 graph autoencoder \citep{audibert2020usad} (naive, rolling-normal, and
 domain-adversarial variants, all PR-AUC $\sim$0.037) and a supervised

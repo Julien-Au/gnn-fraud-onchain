@@ -265,7 +265,8 @@ Mirage"*):
   **It generalizes to a second task, and a cross-domain control points at the mechanism.**
   On Elliptic++ **address** classification (heterogeneous, 822k nodes) the same inflation
   appears and survives a deployment-honest feature protocol (pre-split wallet
-  aggregation, train-only scaling): PR-AUC 0.469 -> 0.966, **+0.497**. On **DGraph-Fin**
+  aggregation, train-only scaling): over 3 seeds, PR-AUC 0.417 +/- 0.042 (temporal)
+  vs 0.966 +/- 0.002 (random), **+0.548 +/- 0.041**. On **DGraph-Fin**
   (3.7M-node fintech graph with a *temporally
   stable* fraud rate) the PR-AUC inflation vanishes (+0.002) - though ROC-AUC still
   inflates by +0.031, and both models sit near the PR-AUC floor, so this control is

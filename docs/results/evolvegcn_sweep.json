@@ -1,0 +1,107 @@
+{
+  "seed": 42,
+  "runs": [
+    {
+      "lr": 0.01,
+      "grad_clip": null,
+      "val_pr_auc": 0.1321,
+      "test": {
+        "pr_auc": 0.1003,
+        "roc_auc": 0.6634,
+        "f1": 0.181,
+        "precision": 0.1061,
+        "recall": 0.615,
+        "threshold": 0.172,
+        "tp": 666,
+        "fp": 5612,
+        "fn": 417,
+        "tn": 9975
+      }
+    },
+    {
+      "lr": 0.01,
+      "grad_clip": 1.0,
+      "val_pr_auc": 0.4505,
+      "test": {
+        "pr_auc": 0.1544,
+        "roc_auc": 0.7607,
+        "f1": 0.1623,
+        "precision": 0.1815,
+        "recall": 0.1468,
+        "threshold": 0.5753,
+        "tp": 159,
+        "fp": 717,
+        "fn": 924,
+        "tn": 14870
+      }
+    },
+    {
+      "lr": 0.005,
+      "grad_clip": null,
+      "val_pr_auc": 0.4587,
+      "test": {
+        "pr_auc": 0.1996,
+        "roc_auc": 0.8053,
+        "f1": 0.2786,
+        "precision": 0.2459,
+        "recall": 0.3213,
+        "threshold": 0.6559,
+        "tp": 348,
+        "fp": 1067,
+        "fn": 735,
+        "tn": 14520
+      }
+    },
+    {
+      "lr": 0.005,
+      "grad_clip": 1.0,
+      "val_pr_auc": 0.3313,
+      "test": {
+        "pr_auc": 0.1071,
+        "roc_auc": 0.7045,
+        "f1": 0.0969,
+        "precision": 0.0898,
+        "recall": 0.1053,
+        "threshold": 0.544,
+        "tp": 114,
+        "fp": 1155,
+        "fn": 969,
+        "tn": 14432
+      }
+    },
+    {
+      "lr": 0.001,
+      "grad_clip": null,
+      "val_pr_auc": 0.4143,
+      "test": {
+        "pr_auc": 0.1594,
+        "roc_auc": 0.7692,
+        "f1": 0.2466,
+        "precision": 0.203,
+        "recall": 0.3139,
+        "threshold": 0.4986,
+        "tp": 340,
+        "fp": 1335,
+        "fn": 743,
+        "tn": 14252
+      }
+    },
+    {
+      "lr": 0.001,
+      "grad_clip": 1.0,
+      "val_pr_auc": 0.4143,
+      "test": {
+        "pr_auc": 0.1594,
+        "roc_auc": 0.7692,
+        "f1": 0.2466,
+        "precision": 0.203,
+        "recall": 0.3139,
+        "threshold": 0.4986,
+        "tp": 340,
+        "fp": 1335,
+        "fn": 743,
+        "tn": 14252
+      }
+    }
+  ]
+}

@@ -289,6 +289,23 @@ principled attempts (reconstruction, rolling-normal, unsupervised domain-adversa
 supervised domain-adversarial) all fail. This is reported honestly - the value is a
 rigorous reality check plus a mapped-out set of what does not work.
 
+## Exp 13 - Generality round: MP-leak null everywhere, controls robust
+
+- **Decomposition generalizes (5 seeds each).** GCN: base-rate +0.061, MP-leak
+  +0.003 +/- 0.016, distribution access +0.489 (total +0.553). GAT: base-rate
+  +0.073, MP-leak -0.010 +/- 0.033, distribution access +0.415 (total +0.478).
+  With SAGE (0.000 +/- 0.007), the message-passing leakage channel is **null across
+  all three architectures**; distribution access dominates everywhere.
+- **Hetero inflation is seed-robust.** pre_split, seeds 42/43/44: inflation +0.497 /
+  +0.597 / +0.551 -> **+0.548 +/- 0.041** (temporal 0.417 +/- 0.042, random
+  0.966 +/- 0.002).
+- **DGraph control holds with a wider model.** hidden 128: PR-AUC inflation +0.004
+  (still ~null), ROC-AUC +0.055. The floor caveat stands; the control remains
+  supporting evidence, not proof.
+- **EvolveGCN sweep artifact** (`evolvegcn_sweep.json`): lr x clip grid, best test
+  PR-AUC 0.200 (lr 0.005, no clip) vs 0.100 default - tuning helps somewhat but
+  every configuration stays far below the honest baselines.
+
 **Post-decomposition update (Exp 10-12).** The central claim is now sharper and
 partly self-corrected: the temporal-vs-random gap decomposes into a small base-rate
 term, a **null** message-passing-leakage term (our own double-leak hypothesis,
