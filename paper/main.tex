@@ -1,0 +1,225 @@
+% TMLR submission skeleton.
+% For actual TMLR submission: download tmlr.sty from
+% https://github.com/JmlrOrg/tmlr-style-file, replace the documentclass block with
+%   \documentclass{article}\usepackage[preprint]{tmlr}
+% and adjust author formatting to the TMLR template. This file compiles standalone
+% with the plain article class so the content can be iterated without the style file.
+
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{booktabs}
+\usepackage{graphicx}
+\usepackage{amsmath}
+\usepackage{natbib}
+\usepackage{hyperref}
+\usepackage{xcolor}
+\newcommand{\todo}[1]{\textcolor{red}{[TODO: #1]}}
+
+\title{How Much of the Elliptic Leaderboard Is Real?\\
+Decomposing Evaluation Inflation into Leakage, Shift, and Base-Rate Effects\\
+on Temporal Transaction Graphs}
+
+\author{Julien Audibert\\ \texttt{[affiliation]}}
+\date{}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+The Elliptic Bitcoin dataset and its heterogeneous extension Elliptic++ are standard
+benchmarks for graph-based fraud detection, and recent work reports near-perfect
+illicit-detection performance (F1 up to $\sim$0.98). We show these numbers are largely
+an artifact of evaluation protocol. Using a single codebase, we train the same models
+(GCN, GraphSAGE, GAT, XGBoost) under (a) the honest temporal split and (b) a random
+split, and find the random split inflates illicit-class PR-AUC by $+0.195\pm0.001$
+(XGBoost) to $+0.553\pm0.055$ (GCN) over five seeds; under the random split a vanilla
+XGBoost reaches F1 0.955 / PR-AUC 0.986, squarely in the reported ``SOTA'' band. We
+then \emph{decompose} the gap with two controls. A prevalence-matched random test set
+isolates a small base-rate component ($+0.026$ GNN / $+0.005$ XGBoost). An inductive
+ablation, which removes all test nodes from the graph during training, measures the
+graph-specific ``message-passing leakage'' we ourselves initially hypothesized at
+\textbf{zero} ($-0.000\pm0.007$). The dominant component is \emph{distribution
+access} ($+0.384$ GNN / $+0.189$ XGBoost): random splits train models on the test
+period's distribution, and the models that generalize worst across temporal shift
+(GNNs) gain the most. The inflation generalizes to the Elliptic++ address task under
+a deployment-honest feature protocol ($+0.497$), while a temporally stable
+cross-domain control (DGraph-Fin) shows essentially no PR-AUC inflation ($+0.002$),
+consistent with the shift-driven mechanism. Under the only comparable protocol,
+gradient-boosted trees still lead graph neural networks, reproducing the original
+2019 benchmark; a 12-configuration GNN tuning sweep narrows but does not close the
+gap. We characterize the unsolved post-shift regime and report four novel but
+negative drift-robust method attempts, including the first adaptation of USAD's
+two-decoder adversarial objective to graphs. All results are reproducible from a
+CI-gated public repository.
+\end{abstract}
+
+\section{Introduction}
+Detecting illicit activity in blockchain transaction graphs is a canonical
+application of graph machine learning. The Elliptic dataset
+\citep{weber2019aml} (203{,}769 Bitcoin transactions across 49 time steps,
+$\sim$2\% illicit) and Elliptic++ \citep{elmougy2023elliptic} (adding 822{,}942
+wallet addresses) are the de facto benchmarks. A stream of recent papers reports
+illicit-detection F1 approaching 0.98, suggesting the problem is nearly solved. We
+argue this impression is false and traces to two evaluation choices: (i) random
+rather than temporal train/test splits, which give models access to the test
+period's distribution, and (ii) reporting weighted or overall F1, dominated by the
+$\sim$98\% licit class, rather than illicit-class metrics.
+
+Our contributions are: (1) a systematic, multi-model, multi-seed quantification of
+the random-split inflation on Elliptic-family benchmarks; (2) a decomposition of
+that inflation into base-rate, graph-leakage, and distribution-access components,
+including the measured refutation of our own message-passing-leakage hypothesis;
+(3) a temporally stable cross-domain control consistent with the shift-driven
+mechanism; and (4) honest negative results for four drift-robust method variants,
+including a first USAD-on-graph adaptation. We release a leakage-free evaluation
+harness in which every reported number is one seeded command.
+
+\section{Related work}
+\paragraph{Evaluation integrity.} Leakage was formalized by \citet{kaufman2011leakage}
+(the ``no time machine'' rule); \citet{kapoor2023leakage} taxonomize it as a driver
+of ML reproducibility failures; \citet{arp2022dos} name ``temporal snooping'' among
+security-ML pitfalls; \citet{shchur2018pitfalls} document protocol sensitivity in
+GNN evaluation generally. The closest template is TESSERACT
+\citep{pendlebury2019tesseract}, which showed Android-malware F1 of $\sim$0.99
+collapsing under time-aware evaluation. Relative to this line, our contribution is
+graph-native and mechanistic: we quantify the inflation on Elliptic-family
+benchmarks across model classes and decompose it, showing the graph-specific
+channel is null and the dominant term is distribution access.
+
+\paragraph{Elliptic-specific evaluation.} \citet{weber2019aml} established the
+temporal protocol and the trees-over-GNNs result; GADBench \citep{tang2023gadbench}
+confirms tuned tree ensembles lead on Elliptic (tuned RF AUPRC $\approx$0.789,
+matching our XGBoost). A recent preprint \citep{maganti2026liability} critiques
+Elliptic evaluation along a transductive-versus-inductive axis. None of these
+measure random-split inflation across models, decompose it, or test a
+stable-domain control.
+
+\paragraph{Graph anomaly detection and USAD.} Reconstruction autoencoders
+\citep{ding2019dominant}, generative and adversarially regularized variants, and
+one-class methods form the unsupervised graph-anomaly literature. USAD
+\citep{audibert2020usad}, a two-decoder adversarially trained autoencoder for
+multivariate time series, has to our knowledge not previously been adapted to
+graphs; we adapt it and report the (negative) outcome.
+
+\section{Experimental protocol}
+\label{sec:protocol}
+All experiments use one codebase, fixed seeds, and a CI-gated environment.
+The honest protocol is: a temporal split (Elliptic's canonical early-versus-late
+time steps; first-seen splits for addresses and DGraph-Fin), illicit-class PR-AUC
+and F1 as primary metrics, a validation slice carved from the latest train steps,
+and decision thresholds chosen on validation only. Leakage comparisons hold the
+model, features, and trainer fixed and change only the split. Models: GCN
+\citep{kipf2017gcn}, GraphSAGE \citep{hamilton2017graphsage}, GAT
+\citep{velickovic2018gat}, XGBoost \citep{chen2016xgboost}.
+
+\section{Results}
+\subsection{The honest baseline ordering}
+Under the temporal split, XGBoost (PR-AUC $0.791\pm0.001$; F1 0.82 under the
+full-train protocol) leads GraphSAGE ($0.510\pm0.035$), GAT ($0.297\pm0.054$) and
+GCN ($0.265\pm0.051$), reproducing \citet{weber2019aml}. A 12-configuration tuning
+sweep selected on temporal validation improves GraphSAGE to PR-AUC 0.506 / F1 0.486
+(from F1 0.422 at defaults) without changing the ordering. Our GNN F1 remains below
+some honest-protocol literature values ($\sim$0.69); we report this openly as a
+protocol/training-detail discrepancy rather than claiming parity.
+
+\subsection{The inflation, quantified}
+\begin{table}[h]
+\centering
+\caption{Illicit-class PR-AUC under the honest temporal split versus a stratified
+random split (mean $\pm$ std over 5 seeds). Same model, same trainer, same
+features; only the split differs.}
+\label{tab:inflation}
+\begin{tabular}{lccc}
+\toprule
+Model & Temporal & Random & Inflation \\
+\midrule
+GCN & $0.265\pm0.051$ & $0.818\pm0.009$ & $+0.553\pm0.055$ \\
+GraphSAGE & $0.510\pm0.035$ & $0.920\pm0.007$ & $+0.410\pm0.041$ \\
+GAT & $0.297\pm0.054$ & $0.775\pm0.032$ & $+0.478\pm0.036$ \\
+XGBoost & $0.791\pm0.001$ & $0.986\pm0.001$ & $+0.195\pm0.001$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Under the random split, XGBoost reaches F1 0.955 / PR-AUC 0.986, inside the
+literature's reported $\sim$0.90--0.98 band. The effect generalizes to the
+Elliptic++ address task (heterogeneous graph, 822k address nodes) under a
+deployment-honest feature protocol (pre-split wallet aggregation, train-only
+scaling): PR-AUC $0.469 \rightarrow 0.966$ ($+0.497$).
+\todo{add multi-seed hetero numbers (batch2: seeds 43, 44)}
+
+\subsection{Decomposing the gap}
+\label{sec:decompose}
+Two controls, threshold-free PR-AUC, five seeds. (i) Matching the random test
+set's prevalence to the temporal test's (6.5\%) isolates the base-rate component.
+(ii) An inductive ablation removes all test nodes from the graph during training,
+so no test feature or test-adjacent edge is visible; this measures graph-specific
+message-passing leakage directly.
+
+\begin{table}[h]
+\centering
+\caption{Decomposition of the temporal-versus-random gap (PR-AUC, 5 seeds).}
+\label{tab:decompose}
+\begin{tabular}{lcc}
+\toprule
+Component & GraphSAGE & XGBoost \\
+\midrule
+Base rate & $+0.026\pm0.005$ & $+0.005\pm0.001$ \\
+Message-passing leakage & $-0.000\pm0.007$ & n/a \\
+Distribution access & $+0.384\pm0.044$ & $+0.189\pm0.002$ \\
+\midrule
+Total gap & $+0.410\pm0.041$ & $+0.195\pm0.001$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The message-passing channel we ourselves hypothesized is \textbf{null}: training
+with test nodes entirely removed from the graph changes random-split PR-AUC by
+$-0.000\pm0.007$ (0.894 versus 0.894). The dominant term is distribution access:
+a random split trains the model on examples drawn from the test period, an
+advantage no deployed model can have. GNNs inflate more than XGBoost because
+their temporal generalization is weaker, not because of a graph-specific leak.
+We report this as an explicit self-correction.
+\todo{add GCN and GAT decomposition columns (batch2)}
+
+\subsection{A temporally stable control}
+On DGraph-Fin \citep{huang2022dgraph} (3.7M nodes, timestamped edges, temporally
+stable $\sim$1.3\% fraud rate), the same GraphSAGE shows essentially no PR-AUC
+inflation ($0.037 \rightarrow 0.039$, $+0.002$), consistent with the mechanism:
+where the distribution does not shift, there is nothing to access. Caveats stated
+plainly: ROC-AUC does inflate ($+0.031$), both arms sit near the PR-AUC floor, and
+GADBench reports strong GNNs on DGraph-Fin, so this control is supporting evidence
+rather than proof. \todo{add hidden-dim-128 control run (batch2)}
+
+\subsection{The unsolved post-shift regime and negative method results}
+Under the temporal protocol, a rolling per-window backtest of EvolveGCN-O
+\citep{pareja2020evolvegcn} collapses at the dark-market shutdown (steps 44--46:
+PR-AUC $\sim$0.01) and only partially recovers; a learning-rate
+$\times$ gradient-clipping sweep does not change the conclusion.
+\todo{cite evolvegcn\_sweep.json artifact numbers (batch2)}
+Four drift-robust variants fail honestly: a USAD-style two-decoder adversarial
+graph autoencoder \citep{audibert2020usad} (naive, rolling-normal, and
+domain-adversarial variants, all PR-AUC $\sim$0.037) and a supervised
+domain-adversarial GraphSAGE \citep{ganin2015dann} (PR-AUC 0.364, below the plain
+baseline 0.510): enforcing time-invariance removes signal rather than improving
+generalization under this regime change.
+
+\section{Discussion and recommendations}
+(1) On temporally shifting fraud graphs, report illicit-class metrics under a
+strict temporal split; random-split numbers can overstate PR-AUC by up to
+$+0.55$. (2) The post-shift window is the real benchmark; aggregate scores hide
+the collapse. (3) Graph structure is not a free win on Elliptic: features already
+encode neighborhood aggregates, and under honest evaluation trees lead. (4)
+Method claims should be accompanied by decomposition-style controls; our own
+double-leak hypothesis did not survive its ablation.
+
+\section{Conclusion}
+The near-perfect reported performance on Elliptic-family benchmarks is largely an
+evaluation artifact whose dominant mechanism is distribution access, not
+graph-specific leakage. We provide the decomposition, the controls, a reproducible
+harness, and honest negative results, and we re-anchor the honest state of the art.
+
+\bibliographystyle{plainnat}
+\bibliography{references}
+
+\end{document}
