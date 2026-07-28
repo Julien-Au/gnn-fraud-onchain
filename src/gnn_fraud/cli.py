@@ -667,7 +667,7 @@ def leakage_seeds(
     data = load_elliptic(root)
     timesteps = node_timesteps(root)
     seed_list = [int(s) for s in seeds.split(",") if s.strip()]
-    runs = []
+    runs: list[dict[str, Any]] = []
     for s in seed_list:
         console.print(f"[bold]Leakage seed {s}...[/bold]")
         r = run_leakage_experiment(data, timesteps, model, seed=s)
@@ -703,6 +703,7 @@ def leakage_dgraph(
     root: str = "data/raw/dgraphfin",
     cache: str = "data/processed/dgraph.pt",
     model: str = "sage",
+    hidden_dim: int = 64,
     results_path: str = "docs/results/leakage_dgraph.json",
     seed: int = 42,
 ) -> None:
@@ -715,8 +716,14 @@ def leakage_dgraph(
 
     console.print("[bold]Loading DGraph-Fin (cached after first build)...[/bold]")
     data = load_dgraph(root, cache)
-    console.print(f"[bold]DGraph leakage ({model}): temporal vs random...[/bold]")
-    res = run_dgraph_leakage(data, model_name=model, seed=seed)
+    console.print(
+        f"[bold]DGraph leakage ({model}, hidden={hidden_dim}): temporal vs random...[/bold]"
+    )
+    res = run_dgraph_leakage(data, model_name=model, seed=seed, hidden_dim=hidden_dim)
+    if hidden_dim != 64:
+        results_path = str(
+            Path(results_path).with_name(Path(results_path).stem + f"_h{hidden_dim}.json")
+        )
     t, r = float(res["temporal"]["pr_auc"]), float(res["random"]["pr_auc"])
     table = Table(title=f"DGraph-Fin {model}: honest temporal vs leaky random split")
     for col in ("split", "PR-AUC", "ROC-AUC", "F1"):
@@ -816,6 +823,58 @@ def tune_gnn(
     out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.write_text(json.dumps(out, indent=2) + "\n", encoding="utf-8")
     console.print(f"Saved to {out_path}")
+
+
+@app.command()
+def sweep_temporal(
+    root: str = "data/raw/elliptic",
+    results_path: str = "docs/results/evolvegcn_sweep.json",
+    epochs: int = 150,
+    val_start: int = 33,
+    seed: int = 42,
+) -> None:
+    """EvolveGCN-O robustness sweep: lr x gradient-clipping grid, saved as an artifact.
+
+    Backs the "fails regardless of tuning" claim with a committed result file.
+    Requires the ``gnn`` extra.
+    """
+    import json
+    from pathlib import Path
+
+    from gnn_fraud.ingestion.elliptic import load_elliptic, node_timesteps
+    from gnn_fraud.train.temporal_trainer import fit_evolvegcn
+
+    data = load_elliptic(root)
+    timesteps = node_timesteps(root)
+    runs: list[dict[str, Any]] = []
+    for lr in (0.01, 0.005, 0.001):
+        for clip in (None, 1.0):
+            console.print(f"[bold]EvolveGCN sweep: lr={lr} clip={clip}...[/bold]")
+            _, _, out = fit_evolvegcn(
+                data,
+                timesteps,
+                lr=lr,
+                grad_clip=clip,
+                epochs=epochs,
+                seed=seed,
+                val_start=val_start,
+            )
+            runs.append(
+                {
+                    "lr": lr,
+                    "grad_clip": clip,
+                    "val_pr_auc": round(out.best_val_pr_auc, 4),
+                    "test": out.metrics.as_row(),
+                }
+            )
+            console.print(
+                f"  -> val PR-AUC={out.best_val_pr_auc:.4f} test PR-AUC={out.metrics.pr_auc:.4f}"
+            )
+    out_path = Path(results_path)
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    out_path.write_text(json.dumps({"seed": seed, "runs": runs}, indent=2) + "\n", encoding="utf-8")
+    best = max(r["test"]["pr_auc"] for r in runs)
+    console.print(f"Best test PR-AUC across the grid: {best:.4f}. Saved to {out_path}")
 
 
 @app.command()

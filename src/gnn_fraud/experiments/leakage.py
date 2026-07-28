@@ -127,11 +127,17 @@ def run_hetero_leakage(
 
 
 def run_dgraph_leakage(
-    data: Data, model_name: str = "sage", seed: int = 42, p_train: int = 55, p_test: int = 70
+    data: Data,
+    model_name: str = "sage",
+    seed: int = 42,
+    p_train: int = 55,
+    p_test: int = 70,
+    hidden_dim: int = 64,
 ) -> dict[str, dict[str, float | int]]:
     """Leakage on DGraph-Fin: temporal (first-seen) split vs random split, same GNN.
 
-    Tests whether the inflation generalizes to a different domain (fintech social graph).
+    Tests whether the inflation generalizes to a different domain (fintech social
+    graph). ``hidden_dim`` lets a stronger model probe the floor-effect concern.
     """
     y = data.y
     labeled = (y == 0) | (y == 1)
@@ -144,8 +150,12 @@ def run_dgraph_leakage(
     t_test = labeled & (nt > thr_test)
     r_train, r_val, r_test = random_masks(y, seed=seed)
 
-    temporal, _ = _fit_with_masks(data, model_name, t_train, t_val, t_test, seed=seed)
-    random_split, _ = _fit_with_masks(data, model_name, r_train, r_val, r_test, seed=seed)
+    temporal, _ = _fit_with_masks(
+        data, model_name, t_train, t_val, t_test, seed=seed, hidden_dim=hidden_dim
+    )
+    random_split, _ = _fit_with_masks(
+        data, model_name, r_train, r_val, r_test, seed=seed, hidden_dim=hidden_dim
+    )
     return {"temporal": temporal.as_row(), "random": random_split.as_row()}
 
 

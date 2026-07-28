@@ -118,9 +118,17 @@ Random Forest > GCN on Elliptic). Why, concretely:
   on early steps and tested on later ones; a transductive GNN has no temporal
   mechanism to adapt.
 
-GraphSAGE > GCN > GAT is itself informative: separating self from neighbor
-aggregation (SAGE) helped; attention (GAT) did not, likely because with a tiny
-mean degree (2.3) there are too few neighbors for attention to matter.
+On PR-AUC the ordering is GraphSAGE > GAT > GCN, suggesting that separating self
+from neighbor aggregation (SAGE) helps while attention does not (mean degree is only
+2.3, so there is little for attention to weight). Honest caveat: the ordering is
+metric-dependent - on illicit-F1 GCN (0.436) edges out SAGE (0.422) - and the GNN
+temporal numbers carry seed noise of about +/-0.04-0.05 PR-AUC (see the multi-seed
+table below), so we do not lean on fine-grained architecture rankings.
+
+A note on XGBoost's two temporal numbers: 0.799 (this section) trains on the full
+train period (steps 1-34, step-2 protocol); 0.791 +/- 0.001 (leakage/decomposition
+experiments) trains on sub-train steps 1-29 with 30-34 held out as validation. The
+difference is protocol, not tuning; both are reported.
 
 ### A temporal GNN: EvolveGCN-O (step 3b)
 

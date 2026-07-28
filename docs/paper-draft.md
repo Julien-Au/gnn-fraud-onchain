@@ -63,6 +63,25 @@ works using temporal splits and illicit-class F1 report ~0.6-0.82. These are not
 comparable. A verified literature review (this repo, `docs/sota-review.md`) confirms that
 under the honest temporal protocol, tree ensembles remain ahead of GNNs.
 
+**Evaluation-integrity literature (what this paper instantiates, and what it adds).**
+Temporal leakage is not a new concept: Kaufman et al. (KDD 2011) formalized leakage and
+the "no time machine" rule; Kapoor and Narayanan (Patterns 2023) taxonomize it as a
+driver of ML reproducibility failures; Arp et al. (USENIX Security 2022) name it
+"temporal snooping" among security-ML pitfalls. The closest template is TESSERACT
+(Pendlebury et al., USENIX Security 2019), which showed Android-malware F1 of ~0.99
+collapsing under time-aware evaluation. Our contribution relative to this line is
+graph-native and mechanistic: we quantify the inflation on the Elliptic family across
+model classes, and - via a prevalence-matched control and an inductive
+graph-visibility ablation - decompose it, showing the graph-specific leakage channel
+is null and the dominant term is distribution access. Relative to Elliptic-specific
+work: Weber et al. (2019) established the temporal protocol and trees-over-GNNs;
+GADBench (NeurIPS 2023 D&B) confirms tuned tree ensembles lead on Elliptic (their
+tuned RF AUPRC ~0.789 matches our XGBoost); a 2026 preprint (arXiv 2604.19514)
+critiques Elliptic evaluation along a different axis (transductive-vs-inductive
+protocol gaps); and informal analyses have shown split-sensitivity on Elliptic. None
+of these measure the random-split inflation across models, decompose it into
+base-rate/graph-leak/distribution-access components, or test a stable-domain control.
+
 **Graph anomaly detection and USAD.** Unsupervised graph anomaly detection has a rich
 literature - reconstruction autoencoders (DOMINANT, AnomalyDAE, GAD-NR), generative
 methods (GAAN, AEGIS), and adversarially-regularized VGAEs (ARGA/ARVGA). USAD (Audibert
@@ -181,6 +200,9 @@ and CI. Results JSON in `docs/results/`; the verified literature review in
 ## References (anchors)
 
 Peer-reviewed: Weber et al., "Anti-Money Laundering in Bitcoin..." (2019, arXiv 1908.02591);
-Elmougy and Liu, Elliptic++ (KDD 2023, arXiv 2306.06108); Audibert et al., USAD (KDD 2020).
-Recent preprints (treated as unreplicated) and the full source list are in
+Elmougy and Liu, Elliptic++ (KDD 2023, arXiv 2306.06108); Audibert et al., USAD (KDD 2020);
+Pendlebury et al., TESSERACT (USENIX Security 2019); Tang et al., GADBench (NeurIPS 2023
+D&B); Kapoor and Narayanan (Patterns 2023); Arp et al. (USENIX Security 2022); Kaufman
+et al. (KDD 2011); Huang et al., DGraph (NeurIPS 2022 D&B); Pareja et al., EvolveGCN
+(AAAI 2020). Recent preprints (treated as unreplicated) and the full source list are in
 `docs/sota-review.md`.

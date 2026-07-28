@@ -18,10 +18,15 @@ Under a **strict temporal split** (train time steps 1-34, test 35-49) and the
 | Skip-GCN | 0.705 | Weber et al. 2019 |
 | GAT / GCN | ~0.61 / 0.50-0.63 | Weber 2019 / 2026 re-eval |
 
-**Tree ensembles beat GNNs by 10+ points, unbroken from 2019 to 2026.** GNNs act
-mainly as representation learners; tabular classifiers give better decision
-boundaries under severe imbalance. **Our own results reproduce this ordering exactly**
-(XGBoost 0.80 F1 >> GraphSAGE 0.49 >> GAT/GCN), an independent honest confirmation.
+**Tree ensembles beat GNNs, unbroken from 2019 to 2026** (by 10+ F1 points in the
+literature). GNNs act mainly as representation learners; tabular classifiers give
+better decision boundaries under severe imbalance. **Our results reproduce the
+trees-over-GNNs ordering** (XGBoost PR-AUC 0.80 / F1 0.82 vs GraphSAGE PR-AUC 0.49 /
+F1 0.42). Two honest caveats: our GNN F1 sits well below the literature's honest GNN
+values (~0.69 for GraphSAGE) even after a 12-config tuning sweep (best 0.486), so our
+tree-vs-GNN gap is larger than the field's; and the within-GNN ordering is
+metric-dependent (on F1, GCN edges out SAGE). We lean only on the coarse
+trees-over-GNNs conclusion, which is robust.
 
 ## 2. The leakage warning (why "~0.98 SOTA" is not real)
 

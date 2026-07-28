@@ -92,6 +92,7 @@ def fit_evolvegcn(
     patience: int = 20,
     seed: int = 42,
     val_start: int = 30,
+    grad_clip: float | None = None,
 ) -> tuple[EvolveGCN, list[Snapshot], TrainOutcome]:
     """Train EvolveGCN-O; return the fitted model, its snapshots, and test metrics.
 
@@ -125,6 +126,8 @@ def fit_evolvegcn(
                 losses.append(loss_fn(out[s.labeled], s.y[s.labeled]))
         loss = torch.stack(losses).mean()
         loss.backward()
+        if grad_clip is not None:
+            torch.nn.utils.clip_grad_norm_(model.parameters(), grad_clip)
         optimizer.step()
 
         y_val, p_val = _collect(model, snapshots, val_start, TRAIN_MAX_TIMESTEP)
