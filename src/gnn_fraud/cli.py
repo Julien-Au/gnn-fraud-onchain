@@ -961,6 +961,52 @@ def leakage_windowed(
 
 
 @app.command()
+def leakage_amlworld(
+    root: str = "data/raw/amlworld",
+    seeds: str = "42,43,44",
+    results_path: str = "docs/results/leakage_amlworld.json",
+) -> None:
+    """Leakage on IBM AMLworld HI-Small (tabular XGBoost, 5M transactions).
+
+    Requires ``boost`` and the Kaggle-downloaded raw CSVs in data/raw/amlworld/.
+    """
+    import json
+    from pathlib import Path
+
+    from gnn_fraud.experiments.amlworld_leakage import run_amlworld_leakage
+    from gnn_fraud.ingestion.amlworld import load_amlworld
+
+    console.print("[bold]Loading AMLworld HI-Small (cached after first parse)...[/bold]")
+    x, y, t = load_amlworld(root)
+    console.print(f"  {x.shape[0]:,} transactions, {int(y.sum()):,} laundering ({y.mean():.3%})")
+    seed_list = tuple(int(s) for s in seeds.split(",") if s.strip())
+    console.print(f"[bold]AMLworld leakage (XGBoost, {len(seed_list)} seeds)...[/bold]")
+    res = run_amlworld_leakage(x, y, t, seeds=seed_list)
+
+    table = Table(title="AMLworld HI-Small: temporal vs random split (XGBoost)")
+    for col in ("arm", "PR-AUC", "F1", "ROC-AUC"):
+        table.add_column(col, justify="right" if col != "arm" else "left")
+    for arm in ("temporal", "random"):
+        r = res[arm]
+        table.add_row(
+            arm,
+            f"{r['pr_auc']['mean']:.4f} +/- {r['pr_auc']['sstd']:.4f}",
+            f"{r['f1']['mean']:.4f} +/- {r['f1']['sstd']:.4f}",
+            f"{r['roc_auc']['mean']:.4f} +/- {r['roc_auc']['sstd']:.4f}",
+        )
+    console.print(table)
+    console.print(f"prevalence per window: {res['prevalence']}")
+    console.print(
+        f"[bold red]Inflation: +{res['inflation_pr_auc']['mean']:.4f} "
+        f"+/- {res['inflation_pr_auc']['sstd']:.4f} PR-AUC[/bold red]"
+    )
+    out_path = Path(results_path)
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    out_path.write_text(json.dumps(res, indent=2) + "\n", encoding="utf-8")
+    console.print(f"Saved to {out_path}")
+
+
+@app.command()
 def smoke_train() -> None:
     """Run a tiny 1-epoch smoke train (requires the ``gnn`` extra).
 
