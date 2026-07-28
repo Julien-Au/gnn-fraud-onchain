@@ -47,7 +47,9 @@ XGBoost baseline yet.
 ### GCN / GraphSAGE / GAT (static, transductive)
 - **Input**: full Elliptic graph (unknown nodes included for message passing); loss
   on labeled train nodes only.
-- **Result**: 0.29 / 0.49 / 0.33 PR-AUC. Below XGBoost. SAGE > GCN > GAT (separating
+- **Result**: 0.29 / 0.49 / 0.33 PR-AUC (GCN/SAGE/GAT, seed 42; 5-seed means
+  0.27/0.51/0.30). Below XGBoost. PR-AUC order SAGE > GAT > GCN, but on F1 GCN
+  edges out SAGE - the fine ordering is metric-sensitive (separating
   self from neighbors helps; attention does not, given mean degree ~2.3).
 - **Limitations**: features already encode aggregated neighbors; per-time-step
   disconnection limits receptive field; no temporal mechanism.
@@ -69,7 +71,8 @@ XGBoost baseline yet.
 ### Heterogeneous SAGE, address target (Elliptic++) - a different task
 - **Input**: same HeteroData; target is the **address** node type; addresses split
   by first-seen time step (train 172,903 / test 92,451 labeled; 5.3% illicit).
-- **Result**: PR-AUC **0.456**, F1 0.529 - detects illicit *actors* (wallets), not
+- **Result**: PR-AUC **0.456**, F1 0.529 (seed 42, lifetime feature protocol) -
+  detects illicit *actors* (wallets), not
   just transactions. Same model, different node type, no architecture change.
 - **Reproduce**: `gnn-fraud train-hetero --target addr`.
 - **Note**: not directly comparable to the tx numbers (different task/test set); the

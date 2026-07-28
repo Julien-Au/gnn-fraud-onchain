@@ -145,8 +145,10 @@ a strict temporal split (train steps 1-29, val 30-34, test 35-49).
 **This underperforms everything - and the honest reason is instructive.** A
 diagnostic (train loss, val and test PR-AUC over epochs, across learning rates and
 with/without gradient clipping) shows the training loss *decreases steadily* (the
-model learns) and val PR-AUC reaches ~0.3, but **test PR-AUC collapses to ~0.1
-regardless of tuning**. So this is not a training bug; it is a genuine failure to
+model learns) and test PR-AUC stays low across every configuration we tried:
+the committed lr x gradient-clipping sweep (`docs/results/evolvegcn_sweep.json`)
+reaches val PR-AUC up to 0.459 and test PR-AUC at best **0.200**, still far below
+every honest baseline. So this is not a training bug; it is a genuine failure to
 generalize across the severe distribution shift (the dark-market shutdown around
 step 43) when the weights are extrapolated far beyond the training window.
 
@@ -206,7 +208,9 @@ are mean-aggregated per address (a modeling choice, documented).
 The same heterogeneous model, pointed at the **address** node type instead of `tx`
 (`gnn-fraud train-hetero --target addr`), detects illicit **wallets** - a different,
 arguably more actionable task (find the actors). On 92,451 test addresses (5.3%
-illicit, split by first-seen time step) it scores **PR-AUC 0.456 / F1 0.529**,
+illicit, split by first-seen time step) it scores **PR-AUC 0.456 / F1 0.529**
+(seed 42, original lifetime feature protocol; under the deployment-honest
+pre-split protocol the temporal arm averages 0.417 +/- 0.052 over 3 seeds),
 catching 2,805 of 4,889 illicit addresses. The point is less the absolute number
 than that **one schema-parameterized model serves both node types with no
 architecture change** - the relational-foundation-model idea in practice.

@@ -133,7 +133,9 @@ baseline yet.
   (2) The graph is disconnected per time step, so message passing has a small
   receptive field. (3) Temporal shift: a transductive GNN has no mechanism to
   adapt from early to late steps. This is a documented result (Weber et al. 2019).
-- **Why SAGE > GCN > GAT here.** Keeping self distinct from neighbor aggregation
+- **Why SAGE leads here (PR-AUC order SAGE > GAT > GCN; on F1, GCN edges out
+  SAGE - the fine ordering is metric- and seed-sensitive).** Keeping self
+  distinct from neighbor aggregation
   (SAGE) helps; attention (GAT) does not, plausibly because mean degree is only
   2.3 - with ~2 neighbors there is little for attention to weight, and the extra
   parameters just add variance.
@@ -161,7 +163,8 @@ from scratch - the weight is the GRU hidden state fed with the previous weight.
 **Result (strict split, train 1-29 / val 30-34 / test 35-49):** test PR-AUC 0.069
 - worse than everything. A diagnostic (loss + val + test PR-AUC across LR and
 gradient clipping) confirmed: **train loss decreases (it learns), val ~0.3, but
-test collapses to ~0.1** in every config. Not a bug; a real generalization failure
+test stays at 0.10-0.20** across the committed lr x clip sweep (best 0.200 with
+val-selection). Not a bug; a real generalization failure
 across the post-shutdown distribution shift when extrapolating far in time.
 
 **What I must be able to say:**
@@ -213,14 +216,16 @@ trend is the point.
 ## Step 5 extras - rolling backtest, address task, Docker
 
 **Rolling temporal backtest (EvolveGCN's fair shot).** With a fuller training budget
-and a *per-time-step* rolling evaluation, aggregate test PR-AUC rises only to 0.100.
+and a *per-time-step* rolling evaluation, aggregate test PR-AUC reaches 0.100 at
+default settings and at best 0.200 across the tuned sweep - still far below baselines.
 The value is the breakdown: PR-AUC collapses at the dark-market shutdown (steps
 44-46: 0.012 / 0.010 / 0.005) and recovers after. Lesson to say out loud: *when a
 temporal model fails, show the failure over the horizon* - an aggregate number hides
 a regime change that a per-step curve makes obvious.
 
 **Address-level classification.** Pointing the same HeteroConv model at the `addr`
-node type instead of `tx` detects illicit wallets: PR-AUC 0.456, F1 0.529 on 92,451
+node type instead of `tx` detects illicit wallets: PR-AUC 0.456, F1 0.529 (seed 42,
+lifetime feature protocol) on 92,451
 test addresses. The engineering point is the payoff of a *schema-parameterized*
 model: `train-hetero --target addr` reuses the exact architecture with a one-word
 change. That is the concrete version of "one model over many relational schemas."

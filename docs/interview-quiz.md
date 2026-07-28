@@ -108,10 +108,10 @@ per-node RNN, and what does EvolveGCN evolve instead?**
 
 **Q2. EvolveGCN scored test PR-AUC 0.069. How did you show this is a real result,
 not a bug?**
-> A trajectory diagnostic across learning rates and gradient clipping: the training
-> loss decreased steadily (it learns) and val reached ~0.3, but test collapsed to
-> ~0.1 in every config - a generalization failure across the post-shutdown shift,
-> not a training bug.
+> A committed lr x gradient-clipping sweep (docs/results/evolvegcn_sweep.json): the
+> training loss decreases steadily (it learns), val PR-AUC reaches up to 0.459, but
+> test PR-AUC stays at 0.10-0.20 in every configuration (best 0.200) - a
+> generalization failure across the post-shutdown shift, not a training bug.
 
 **Q3. Why is comparing EvolveGCN's 0.069 to the static GNNs' ~0.4 not yet fair?**
 > The static GNNs were transductive (test-node features participated in message

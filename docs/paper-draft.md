@@ -1,5 +1,10 @@
 # The Elliptic "SOTA" is a Leakage Mirage: A Leakage-Free Re-Evaluation of Graph Fraud Detection Under Temporal Distribution Shift
 
+> **Superseded:** the authoritative, referee-corrected manuscript is now
+> [`paper/main.tex`](../paper/main.tex) (with per-seed statistics in
+> `docs/results/stats_summary.json`). This markdown draft is kept for history and
+> may contain earlier single-seed numbers.
+
 *Working draft. All numbers are measured and reproducible from this repository
 (`docs/research-log.md`, `docs/results/`). This is an honest reality-check /
 evaluation contribution, not a claim of a new state-of-the-art model.*
