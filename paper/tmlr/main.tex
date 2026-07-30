@@ -394,10 +394,12 @@ harness together with negative results reported in full, and we re-anchor the
 state of the art under the temporal protocol.
 
 \section*{Reproducibility statement}
-Every number in this paper is produced by one seeded CLI command in the public
-repository (an anonymized repository (\url{https://anonymous.4open.science/r/PLACEHOLDER}; the public repository is linked in the camera-ready)); per-seed values
-for every cell, the statistical summary (\texttt{docs/results/stats\_summary.json}),
-and a CI pipeline (lint, typecheck, tests, Docker smoke) accompany the code.
+Every number in this paper is produced by one seeded CLI command. The
+anonymized supplementary archive contains the full source code, the per-seed
+values for every cell, and the statistical summary
+(\texttt{docs/results/stats\_summary.json}). The public repository, which
+additionally carries a continuous-integration pipeline (lint, typecheck, tests,
+Docker smoke) on every commit, is linked in the camera-ready version.
 Elliptic downloads automatically via PyTorch Geometric; Elliptic++ and DGraph-Fin
 are obtained from their authors (DGraph-Fin is gated and requires registration).
 
