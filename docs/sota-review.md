@@ -100,3 +100,16 @@ Benchmark/context: NeurIPS 2022 datasets track; DGraph; graph-anomaly surveys
 
 *Caveat: recorded honestly - some figures come from recent unreplicated preprints;
 the peer-reviewed Weber 2019 and Elliptic++ KDD'23 anchors are the most solid.*
+
+## 8. Freshness sweep (2026-07-30, pre-submission)
+
+Targeted arXiv API sweep (submittedDate-descending) across three angles:
+Elliptic+evaluation/leakage, leakage+shift decomposition, temporal-vs-random split
+comparisons. Result: **no work preempts the decomposition** on fraud/graph
+benchmarks. Adjacent-domain instances of the genre found (not preempting):
+split-strategy effects in CTR prediction (arXiv 2406.18320), temporal-vs-random
+drops in vulnerability-fixing-commit detection (arXiv 2605.13138, ~17% drop), and
+a leakage-vs-domain-shift formalization in metabolite retrieval (arXiv 2605.19752).
+Maganti (2604.19514) remains v1; its transductive-vs-inductive gap is reconciled
+with our null in the paper (one mechanism, two protocols). A final sweep should be
+re-run in a fresh session immediately before submission.

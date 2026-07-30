@@ -10,3 +10,14 @@ every non-todo number traces to `docs/results/*.json` in this repository.
 
 Build: `pdflatex main && bibtex main && pdflatex main && pdflatex main`
 (or `latexmk -pdf main`).
+
+## Submission checklist (TMLR)
+
+- [ ] Author affiliation filled in `main.tex` (currently `[affiliation]`)
+- [ ] Swap preamble to `tmlr.sty` (see header comment)
+- [x] Fresh literature sweep (last: 2026-07-30, no preempting work; see
+      `docs/sota-review.md` section 8) - re-run just before submission
+- [x] Maganti (arXiv 2604.19514) reconciliation in Related Work and Section 4.3
+- [x] LLM-assistance disclosure (Acknowledgments)
+- [x] Per-seed statistics artifact (`docs/results/stats_summary.json`)
+- [ ] Decide co-authors, if any

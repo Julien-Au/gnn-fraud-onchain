@@ -96,10 +96,20 @@ channel is null and the dominant term is distribution access.
 \paragraph{Elliptic-specific evaluation.} \citet{weber2019aml} established the
 temporal protocol and the trees-over-GNNs result; GADBench \citep{tang2023gadbench}
 confirms tuned tree ensembles lead on Elliptic (tuned RF AUPRC $\approx$0.789,
-matching our XGBoost). A recent preprint \citep{maganti2026liability} critiques
-Elliptic evaluation along a transductive-versus-inductive axis. None of these
-measure random-split inflation across models, decompose it, or test a
-stable-domain control.
+matching our XGBoost). Closest to our ablation, a recent preprint
+\citep{maganti2026liability} reports a large ($\sim$39.5 F1 point)
+transductive-versus-inductive protocol gap on Elliptic under temporal evaluation:
+training-time exposure to test-period graph structure inflates results. This is
+consistent with, and explained by, our decomposition rather than in tension with
+our null: under a \emph{temporal} protocol, test-period nodes are the model's only
+access to the shifted test distribution, so graph visibility carries exactly the
+distributional information that drives inflation; under our \emph{random}-split
+ablation, the labeled training set already spans all periods, test-node features
+are redundant, and removing them changes nothing ($-0.000\pm0.007$). On this
+reading the graph channel is not a separate leak: it matters precisely insofar as
+it transports otherwise-unavailable distributional information -- one mechanism,
+two protocols. None of these works measure random-split inflation across models,
+decompose it into components, or test drift-graded controls.
 
 \paragraph{Graph anomaly detection and USAD.} Reconstruction autoencoders
 \citep{ding2019dominant}, generative and adversarially regularized variants, and
@@ -229,7 +239,11 @@ drawn from the test period, an advantage no deployed model can have. GNNs inflat
 more than XGBoost (paired GraphSAGE$-$XGBoost inflation difference $+0.215$, 95\%
 CI $[0.149, 0.281]$, $p=1/32$) because their temporal generalization is weaker,
 not because of a graph-specific leak. We report this as an explicit
-self-correction.
+self-correction. This null also reconciles our results with the large
+transductive-versus-inductive gap reported by \citet{maganti2026liability} under
+temporal evaluation (Section 2): graph visibility inflates results only when it is
+the sole conduit of test-period distributional information; when distribution
+access is already granted by the split, the graph channel adds nothing measurable.
 
 \subsection{The mechanism's falsifiable prediction: inflation concentrates in the
 shifted window}
