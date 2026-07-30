@@ -113,3 +113,17 @@ a leakage-vs-domain-shift formalization in metabolite retrieval (arXiv 2605.1975
 Maganti (2604.19514) remains v1; its transductive-vs-inductive gap is reconciled
 with our null in the paper (one mechanism, two protocols). A final sweep should be
 re-run in a fresh session immediately before submission.
+
+### 8.1 Addendum (2026-07-30, user-surfaced)
+
+Safar, Pluskal, Vesely, Rysavy, "The enemy of reproducibility is opacity: What's
+inside the Elliptic bitcoin dataset (and why it is wrong)", FSI: Digital
+Investigation 57 (2026) 302124 (DFRWS USA 2026; DOI indexed 2026-07-22, which is
+why arXiv sweeps missed it - journal-only). Verdict after full-text read: **no
+collision** - construction-level dataset forensics (feature reverse-engineering,
+t_f look-ahead aggregates, entity nonindependence, global z-scoring), no model
+training, no quantified inflation, no decomposition. Complementary and now cited
+in the paper (concurrent work): it implies our temporal-arm absolute scores are
+upper bounds on deployable performance, while our arm-difference decomposition is
+unaffected (both arms share the features). Also pins Elliptic's license:
+CC BY-NC-ND 4.0.

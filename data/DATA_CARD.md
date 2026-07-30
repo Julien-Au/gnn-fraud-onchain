@@ -48,9 +48,15 @@ Notes:
 - **Original source**: Elliptic, released with the paper *"Anti-Money
   Laundering in Bitcoin: Experimenting with Graph Convolutional Networks for
   Financial Forensics"* (Weber et al., 2019).
-- **License / terms**: research use; the dataset was distributed publicly by
-  Elliptic (originally via Kaggle). To confirm and pin the exact license text at
-  ingestion. Cite the paper.
+- **License / terms**: **CC BY-NC-ND 4.0** (non-commercial, no derivatives), as
+  documented by Safar et al. (FSI: Digital Investigation, 2026, DOI
+  10.1016/j.fsidi.2026.302124) - consistent with our use (non-commercial research,
+  no redistribution of the data or derivatives). Cite the Weber et al. paper.
+  Note: the same concurrent work shows the dataset's features embed
+  construction-level look-ahead (address aggregates computed after the test
+  period) and entity nonindependence across splits - recorded here because it
+  qualifies ANY absolute score on Elliptic, including ours, as an upper bound on
+  deployable performance.
 - **Why chosen**: packaged (reproducible in CI), temporal (enables a leakage-free
   split), a canonical benchmark (comparable to the literature), and clean enough
   to teach message passing on.

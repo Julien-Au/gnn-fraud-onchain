@@ -108,8 +108,25 @@ ablation, the labeled training set already spans all periods, test-node features
 are redundant, and removing them changes nothing ($-0.000\pm0.007$). On this
 reading the graph channel is not a separate leak: it matters precisely insofar as
 it transports otherwise-unavailable distributional information -- one mechanism,
-two protocols. None of these works measure random-split inflation across models,
-decompose it into components, or test drift-graded controls.
+two protocols.
+
+\paragraph{Concurrent work: construction-level leakage.} While this study was
+underway, \citet{safar2026opacity} published a forensic deconstruction of the
+Elliptic dataset itself: reverse-engineering over 90\% of its feature semantics,
+they show that the ``local'' features embed address-level global statistics
+computed at a reference time \emph{after} the test period (look-ahead by
+construction), that feature normalization was fit on the full dataset, and that
+shared addresses couple training and test samples through both features and
+inherited labels. Their axis is complementary to ours: they identify and formalize
+\emph{construction-level} leakage without quantifying its performance impact; we
+quantify and decompose \emph{protocol-level} inflation without touching feature
+construction. The two compose: construction-level leakage affects our temporal and
+random arms symmetrically (both use the same features), so our gap decomposition
+stands, but it implies our temporal-arm scores are themselves \emph{upper bounds}
+on deployable performance -- the true honest numbers are lower still, which
+strengthens rather than weakens the overall conclusion. None of the works above
+measure random-split inflation across models, decompose it into components, or
+test drift-graded controls.
 
 \paragraph{Graph anomaly detection and USAD.} Reconstruction autoencoders
 \citep{ding2019dominant}, generative and adversarially regularized variants, and
@@ -331,7 +348,13 @@ established here on Elliptic-family data only. (5) The GAT equivalence bound on
 message-passing leakage is loose ($\pm 0.05$). (6) DGraph-Fin's temporal
 stability is measured coarsely (labeled fraud prevalence 1.2\% in the train
 window versus 1.4\% in the test window under our first-seen split), not
-characterized in depth.
+characterized in depth. (7) Per concurrent work \citep{safar2026opacity},
+Elliptic's features embed construction-level look-ahead (address aggregates
+computed after the test period) and entity nonindependence; our ``honest''
+protocol is honest at the \emph{split} level only. Since both arms share the same
+features, this affects our absolute temporal-arm scores (upper bounds on
+deployable performance) but not the arm differences on which the decomposition
+rests.
 
 \section*{Reproducibility statement}
 Every number in this paper is produced by one seeded CLI command in the public
