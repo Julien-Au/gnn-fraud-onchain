@@ -44,3 +44,11 @@ paper/*.blg
 paper/*.log
 paper/*.out
 paper/main.pdf
+
+# LaTeX build artifacts (tmlr variant)
+paper/tmlr/*.aux
+paper/tmlr/*.bbl
+paper/tmlr/*.blg
+paper/tmlr/*.log
+paper/tmlr/*.out
+paper/tmlr/main.pdf
