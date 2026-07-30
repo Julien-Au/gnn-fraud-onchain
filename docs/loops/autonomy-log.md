@@ -18,7 +18,7 @@ loader + CLI) and tests.
 - `src/gnn_fraud/`: `config.py` (typed `ExperimentConfig`), `cli.py` (`info`,
   `smoke-train`), submodule packages.
 - `tests/`: config + CLI tests (7 tests).
-- Docs: `README.md`, `CLAUDE.md`, `LEARNING_NOTES.md`, `data/DATA_CARD.md`,
+- Docs: `README.md`, `CLAUDE.md`, the research log, `data/DATA_CARD.md`,
   `docs/loops/`, `.env.example`, MIT `LICENSE`.
 
 **Self-review (adversarial).** No data or results reported (nothing to fabricate

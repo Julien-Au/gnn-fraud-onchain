@@ -12,7 +12,7 @@ between "an agent that types code" and "an agent you can trust with a task".
 | A skill/prompt | tutor-mode plan + implementation convention (CLAUDE.md) |
 | An action surface | Claude Code tools (edit files, run `uv`, run tests, git) |
 | **A feedback gate** | `scripts/verify.sh` (ruff + mypy + pytest + smoke) + CI |
-| Memory / durability | git history, `LEARNING_NOTES.md`, `docs/loops/autonomy-log.md` |
+| Memory / durability | git history, the research log, `docs/loops/autonomy-log.md` |
 | A halting rule | small commits, explicit stop conditions, human sign-off per step |
 
 ## Why this shape suits a *research* repo

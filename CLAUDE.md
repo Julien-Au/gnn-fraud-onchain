@@ -50,7 +50,6 @@ This is the core of the project's credibility (it will face a research jury):
 - Typed Python; `mypy` strict must pass. Avoid `Any` where avoidable.
 - `ruff` lint + format must pass (`ruff format`, not black).
 - English-only for code, comments, docstrings, and committed docs.
-  (`LEARNING_NOTES.md` may contain the author's study notes; keep them English.)
 - **Do not use em-dashes or en-dashes; use a regular hyphen.**
 - **Conventional Commits** (`feat:`, `fix:`, `chore:`, `docs:`, `test:`, ...).
 - Keep PRs / commits focused; add or update tests with the change.
@@ -85,8 +84,3 @@ This is the core of the project's credibility (it will face a research jury):
 - Do not force-push; do not `git reset --hard` shared history (both denied in
   `.claude/settings.json`).
 
-## Tutor mode (this repo is also a learning artifact)
-
-The author is deliberately learning graph learning here. For each step: explain
-the concept and the trade-off *before* coding, keep `LEARNING_NOTES.md` current,
-and end each step with a couple of comprehension questions.

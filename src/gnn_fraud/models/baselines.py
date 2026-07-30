@@ -7,7 +7,7 @@ gain can be attributed to the graph rather than to the features alone:
 - XGBoost (non-linear, strong on imbalanced tabular) - the real bar to beat.
 - An unsupervised autoencoder (a la USAD) - detection without illicit labels.
 
-Protocol (see LEARNING_NOTES.md): features standardized with a scaler fit on
+Protocol (see docs/research-log.md): features standardized with a scaler fit on
 train only; the built-in temporal split; the F1 threshold chosen on train and
 applied to test; PR-AUC is the primary metric.
 """

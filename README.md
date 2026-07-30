@@ -301,12 +301,10 @@ uv run --extra gnn gnn-fraud demo --timestep 42
 
 ## Further reading
 
-- [`docs/from-usad-to-gnns.md`](docs/from-usad-to-gnns.md) - the research narrative
-  from USAD (KDD 2020) to relational graph learning, with the honest results arc.
 - [`docs/model-cards.md`](docs/model-cards.md) - one card per model, with metrics,
   intent, and limitations.
-- [`docs/interview-quiz.md`](docs/interview-quiz.md) - accumulated study questions
-  with answer keys.
+- [`docs/from-usad-to-gnns.md`](docs/from-usad-to-gnns.md) - the research narrative
+  from USAD (KDD 2020) to relational graph learning.
 
 ## Reproducibility & engineering
 
@@ -318,13 +316,6 @@ uv run --extra gnn gnn-fraud demo --timestep 42
 - **Agent playbook** in [`docs/loops/`](docs/loops/): how this repo is built and
   maintained with self-verifying Claude Code loops (plan -> implement ->
   adversarial self-review -> note).
-
-## Learning in the open
-
-- [`LEARNING_NOTES.md`](LEARNING_NOTES.md) - interview-ready notes on every concept
-  (message passing, over-smoothing, heterogeneous/temporal graphs, imbalanced metrics).
-- [`docs/from-usad-to-gnns.md`](docs/from-usad-to-gnns.md) - the narrative from
-  temporal autoencoders (USAD, KDD 2020) to GNNs on relational / graph data.
 
 ## License
 

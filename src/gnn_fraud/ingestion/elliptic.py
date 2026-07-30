@@ -4,7 +4,7 @@ The Elliptic graph has three classes: licit (0), illicit (1) and unknown (2).
 Only classes 0 and 1 are labeled; the majority of nodes are unknown. PyG ships a
 built-in temporal train/test split (early time steps -> train, later -> test),
 which we surface and never override with a random split (that would leak the
-future; see LEARNING_NOTES.md).
+future; see docs/research-log.md).
 
 ``graph_stats`` is deliberately generic - it operates on any PyG ``Data`` - so it
 is unit-testable on a tiny synthetic graph without downloading anything.

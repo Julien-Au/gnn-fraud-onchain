@@ -33,7 +33,7 @@ plan  ->  implement (small commits)  ->  adversarial self-review of the diff  ->
   fabricated numbers? unfixed seed? weakened test? (This is where research
   integrity is enforced.)
 - **green-gate** - `bash scripts/verify.sh` must pass.
-- **note** - update `LEARNING_NOTES.md` and log the step in `autonomy-log.md`.
+- **note** - update the research log and log the step in `autonomy-log.md`.
 
 ## Files in this folder
 

@@ -3,7 +3,7 @@
 Pure numpy / scikit-learn (no torch), so these run in the fast gate and are
 cheaply unit-tested. The primary metric for this project is PR-AUC (average
 precision); ROC-AUC is reported alongside precisely to show how much rosier it
-looks under heavy imbalance (see LEARNING_NOTES.md).
+looks under heavy imbalance (see docs/research-log.md).
 """
 
 from __future__ import annotations
