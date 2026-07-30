@@ -66,9 +66,10 @@ the random-split inflation on Elliptic-family benchmarks; (2) a decomposition of
 that inflation into base-rate, graph-leakage, and distribution-access components,
 including the measured refutation of our own message-passing-leakage hypothesis;
 (3) a temporally stable cross-domain control consistent with the shift-driven
-mechanism; and (4) negative results, reported in full, for four drift-robust method variants,
-including a first USAD-on-graph adaptation. We release a leakage-free evaluation
-harness in which every reported number is one seeded command.
+mechanism; and (4) negative results, reported in full, for four drift-robust variants.
+These negatives indicate that the post-shift regime is the genuinely open
+problem, rather than an unexplored one. We release an evaluation harness in which
+every reported number is one seeded command.
 
 \section{Related work}
 \paragraph{Evaluation integrity.} Leakage was formalized by \citet{kaufman2011leakage}
@@ -129,10 +130,14 @@ test drift-graded controls.
 
 \paragraph{Graph anomaly detection and USAD.} Reconstruction autoencoders
 \citep{ding2019dominant}, generative and adversarially regularized variants, and
-one-class methods form the unsupervised graph-anomaly literature. USAD
-\citep{audibert2020usad}, a two-decoder adversarially trained autoencoder for
-multivariate time series, has to our knowledge not previously been adapted to
-graphs; we adapt it and report the (negative) outcome.
+one-class methods form the unsupervised graph-anomaly literature. Among
+adversarial reconstruction schemes, we selected USAD \citep{audibert2020usad}, a
+two-decoder autoencoder for multivariate time series, as the representative
+approach for our negative-result study: it is explicitly designed for training
+stability over GAN-style alternatives, which makes it a strong candidate under a
+regime where training instability could otherwise explain a failure. To our
+knowledge it had not previously been adapted to graphs; we adapt it and report
+the outcome.
 
 \section{Experimental protocol}
 \label{sec:protocol}
@@ -334,9 +339,10 @@ protocol. Aggregate scores hide the collapse at the dark-market shutdown
 (steps 44--46).}
 \label{fig:backtest}
 \end{figure}
-Four drift-robust variants fail to improve on the baselines. A USAD-style
-two-decoder adversarial graph autoencoder \citep{audibert2020usad} (naive,
-rolling-normal, and domain-adversarial variants) scores PR-AUC $0.0367\pm0.0001$
+Is the post-shift regime merely unexplored, or genuinely hard? We tested four
+drift-robust variants; none improves on the baselines. A USAD-style two-decoder
+adversarial graph autoencoder \citep{audibert2020usad} (naive, rolling-normal,
+and domain-adversarial variants) scores PR-AUC $0.0367\pm0.0001$
 over three seeds, a stable and decisive negative. A supervised domain-adversarial
 GraphSAGE \citep{ganin2015dann} scores $0.462\pm0.090$ over three seeds,
 statistically indistinguishable from the plain baseline ($0.510\pm0.039$): the
@@ -384,7 +390,8 @@ which the decomposition rests.
 The near-perfect reported performance on Elliptic-family benchmarks is largely an
 evaluation artifact whose dominant mechanism is distribution access, not
 graph-specific leakage. We provide the decomposition, the controls, a reproducible
-harness, and negative results, reported in full,, and we re-anchor the honest state of the art.
+harness together with negative results reported in full, and we re-anchor the
+state of the art under the temporal protocol.
 
 \section*{Reproducibility statement}
 Every number in this paper is produced by one seeded CLI command in the public
@@ -394,13 +401,13 @@ and a CI pipeline (lint, typecheck, tests, Docker smoke) accompany the code.
 Elliptic downloads automatically via PyTorch Geometric; Elliptic++ and DGraph-Fin
 are obtained from their authors (DGraph-Fin is gated and requires registration).
 
-\section*{Acknowledgments and disclosure of LLM assistance}
+\section*{Disclosure of LLM assistance}
 Code, experiments, and manuscript drafting were carried out with substantial
-assistance from an LLM-based coding agent (Claude, Anthropic) operating under the
-author's direction, with the agent workflow itself documented in the repository.
-All research questions, methodological decisions, dataset approvals, and the
-final claims were set and verified by the human author, who takes full
-responsibility for the content. No LLM is an author of this work.
+assistance from an LLM-based coding agent (Claude, Anthropic), with the agent
+workflow documented in the repository. The research questions, methodological
+decisions, and final claims were set and verified by the human author, who takes
+full responsibility for the content.
+% Funding and personal acknowledgments to be added in the camera-ready version.
 
 \bibliographystyle{tmlr}
 \bibliography{references}
