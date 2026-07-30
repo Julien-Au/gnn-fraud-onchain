@@ -88,10 +88,16 @@ of ML reproducibility failures; \citet{arp2022dos} name ``temporal snooping'' am
 security-ML pitfalls; \citet{shchur2018pitfalls} document protocol sensitivity in
 GNN evaluation generally. The closest template is TESSERACT
 \citep{pendlebury2019tesseract}, which showed Android-malware F1 of $\sim$0.99
-collapsing under time-aware evaluation. Relative to this line, our contribution is
-graph-native and mechanistic: we quantify the inflation on Elliptic-family
-benchmarks across model classes and decompose it, showing the graph-specific
-channel is null and the dominant term is distribution access.
+collapsing under time-aware evaluation. Concurrently, \citet{roth2026leakage}
+quantifies four leakage classes across 2{,}047 \emph{iid} tabular benchmarks,
+finding normalization leakage negligible and boundary effects invisible under
+random cross-validation -- precisely the regime where our mechanism predicts no
+inflation. Our results show the complementary regime: on temporally drifting
+fraud benchmarks the split protocol becomes the dominant effect, through
+distribution access rather than any classical leakage class. Relative to this
+line, our contribution is graph-native and mechanistic: we quantify the inflation
+on Elliptic-family benchmarks across model classes and decompose it, showing the
+graph-specific channel is null and the dominant term is distribution access.
 
 \paragraph{Elliptic-specific evaluation.} \citet{weber2019aml} established the
 temporal protocol and the trees-over-GNNs result; GADBench \citep{tang2023gadbench}

@@ -127,3 +127,16 @@ in the paper (concurrent work): it implies our temporal-arm absolute scores are
 upper bounds on deployable performance, while our arm-difference decomposition is
 unaffected (both arms share the features). Also pins Elliptic's license:
 CC BY-NC-ND 4.0.
+
+### 8.2 Journal-inclusive final sweep (2026-07-30, OpenAlex)
+
+Two OpenAlex sweeps (journal-indexed, 2025-06+) surfaced ~50 works; two warranted
+full inspection: Roth, "Which Leakage Types Matter?" (arXiv 2604.04199) - 4-class
+leakage quantification on 2,047 IID tabular datasets, no fraud/graph/drift, now
+cited as complementary (his "boundary effects invisible under random CV in iid
+regimes" is the flip side of our drift-driven result); and Zuberi et al. (Sci Rep
+2026) - a credit-card drift-detection METHOD paper, no critique, not cited.
+Everything else was application papers using Elliptic, several with random splits
+(future targets of the critique, not competitors). **Conclusion: no collision
+found across arXiv + journal indexes. The decomposition, the dose-response, and
+the windowed prediction remain unpreempted.**
