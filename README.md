@@ -7,10 +7,13 @@ A portfolio-grade, fully open and reproducible study: from non-graph baselines
 to GNNs (GCN, GraphSAGE, GAT), a temporal variant, and a **heterogeneous /
 relational** formulation aimed at the "one model across many schemas" question.
 
-> Status: **step 0 - scaffolding.** The engineering loop (green-gate + CI +
-> agent playbook) is in place; data, models and results land in the steps below.
-> No result is reported until it is real and reproduced. See
-> [`docs/loops/`](docs/loops/) for how this repo maintains itself.
+> Status: **complete; paper under review.** The study grew into a manuscript,
+> *"How Much of the Elliptic Leaderboard Is Real? Decomposing Evaluation
+> Inflation into Leakage, Shift, and Base-Rate Effects on Temporal Transaction
+> Graphs"*, submitted to TMLR in July 2026 (source in
+> [`paper/tmlr/`](paper/tmlr/)). Every number in the paper regenerates from this
+> repo with a single seeded command. No result is reported until it is real and
+> reproduced. See [`docs/loops/`](docs/loops/) for how this repo maintains itself.
 
 ## Why this project
 
@@ -122,7 +125,7 @@ On PR-AUC the ordering is GraphSAGE > GAT > GCN, suggesting that separating self
 from neighbor aggregation (SAGE) helps while attention does not (mean degree is only
 2.3, so there is little for attention to weight). Honest caveat: the ordering is
 metric-dependent - on illicit-F1 GCN (0.436) edges out SAGE (0.422) - and the GNN
-temporal numbers carry seed noise of about +/-0.04-0.05 PR-AUC (see the multi-seed
+temporal numbers carry seed noise of about +/-0.04-0.06 PR-AUC (see the multi-seed
 table below), so we do not lean on fine-grained architecture rankings.
 
 A note on XGBoost's two temporal numbers: 0.799 (this section) trains on the full
@@ -234,9 +237,8 @@ uv run gnn-fraud info
 
 Beyond the benchmark: a verified literature review
 ([`docs/sota-review.md`](docs/sota-review.md)), an experiment log
-([`docs/research-log.md`](docs/research-log.md)), and a consolidated write-up draft
-([`docs/paper-draft.md`](docs/paper-draft.md) - *"The Elliptic SOTA is a Leakage
-Mirage"*):
+([`docs/research-log.md`](docs/research-log.md)), and the resulting manuscript
+([`paper/tmlr/main.tex`](paper/tmlr/main.tex), under review at TMLR):
 
 - **Our honest results match the field's honest SOTA.** Under a strict temporal split
   and illicit-class F1 - the only comparable setting - tree ensembles (~0.80) beat
@@ -249,40 +251,74 @@ Mirage"*):
 
   | Model | Temporal PR-AUC | Random PR-AUC | Inflation |
   |---|---|---|---|
-  | GCN | 0.265 +/- 0.051 | 0.818 +/- 0.009 | +0.553 +/- 0.055 |
-  | GraphSAGE | 0.510 +/- 0.035 | 0.920 +/- 0.007 | +0.410 +/- 0.041 |
-  | GAT | 0.297 +/- 0.054 | 0.775 +/- 0.032 | +0.478 +/- 0.036 |
-  | XGBoost | 0.791 +/- 0.001 | **0.986 +/- 0.001** | +0.195 +/- 0.001 |
+  | GCN | 0.265 +/- 0.058 | 0.818 +/- 0.010 | +0.553 +/- 0.062 |
+  | GraphSAGE | 0.510 +/- 0.039 | 0.920 +/- 0.008 | +0.410 +/- 0.046 |
+  | GAT | 0.297 +/- 0.061 | 0.775 +/- 0.036 | +0.478 +/- 0.041 |
+  | XGBoost | 0.791 +/- 0.002 | **0.986 +/- 0.001** | +0.195 +/- 0.001 |
+
+  Every inflation is significant at the smallest attainable exact permutation
+  level (p = 1/32), with 95% CIs bounded away from zero.
+
+- **The published recipe, replicated exactly.** Following the full published recipe
+  (stratified random split + aggregate metrics), a generic XGBoost reproduces the
+  literature's headline numbers over 5 seeds: accuracy 0.9917 +/- 0.0002 and
+  weighted F1 0.9916 +/- 0.0002, matching and slightly exceeding reported values
+  such as 0.9802 / 0.9799. The same model under the temporal protocol scores
+  illicit-F1 0.756 +/- 0.007. The protocol alone suffices to reach the band; no
+  novel architecture is involved (`gnn-fraud recipe`;
+  [`docs/results/recipe.json`](docs/results/recipe.json)).
 
 - **Decomposed, the gap is mostly "distribution access" - and our own "double leak"
   hypothesis is refuted.** With a prevalence-matched control and an inductive
   ablation (all test nodes removed from the graph during training), the GraphSAGE
-  gap splits into: base-rate **+0.026**, message-passing leakage **0.000 +/- 0.007**
+  gap splits into: base-rate **+0.026**, message-passing leakage **-0.000 +/- 0.008**
   (we hypothesized this graph-specific channel, measured it, and it is null), and
   **distribution access +0.384** - random splits train the model on the test
-  period's distribution, an advantage no deployed model can have. GNNs inflate more
-  than XGBoost because they generalize worse across the temporal shift, not because
-  of a graph leak (`gnn-fraud decompose`; [`docs/research-log.md`](docs/research-log.md)).
+  period's distribution, an advantage no deployed model can have. The null holds
+  for **all three architectures** (TOST 90% CIs bound the effect within +/-0.01
+  for GraphSAGE, +/-0.03 for GCN, +/-0.05 for GAT). GNNs inflate more
+  than XGBoost (paired GraphSAGE-XGBoost inflation difference +0.215, 95% CI
+  [0.158, 0.272]) because they generalize worse across the temporal shift, not
+  because of a graph leak (`gnn-fraud decompose`;
+  [`docs/research-log.md`](docs/research-log.md)).
+
+- **The mechanism makes a falsifiable prediction, and it holds.** If distribution
+  access drives the inflation, it should concentrate where the shift is largest:
+  the post-shutdown window. Splitting the test period (GraphSAGE, 5 seeds), the
+  within-window random-over-temporal ratio rises from **1.4x pre-shutdown to 8.2x
+  post-shutdown** (paired log-ratio +1.78 +/- 0.10, all five seeds positive,
+  p = 1/32). Post-shutdown, the temporal model sits near the no-skill floor while
+  the random-split model retains substantial skill - skill it can only have
+  acquired by training on the post-shutdown period itself
+  ([`docs/results/leakage_windowed.json`](docs/results/leakage_windowed.json)).
 
   ![leakage](docs/media/results/leakage_multi.png)
 
-  **It generalizes to a second task, and a cross-domain control points at the mechanism.**
+  **It generalizes to a second task, and cross-domain controls form a dose-response.**
   On Elliptic++ **address** classification (heterogeneous, 822k nodes) the same inflation
   appears and survives a deployment-honest feature protocol (pre-split wallet
-  aggregation, train-only scaling): over 3 seeds, PR-AUC 0.417 +/- 0.042 (temporal)
-  vs 0.966 +/- 0.002 (random), **+0.548 +/- 0.041**. On **DGraph-Fin**
-  (3.7M-node fintech graph with a *temporally
-  stable* fraud rate) the PR-AUC inflation vanishes (+0.002) - though ROC-AUC still
-  inflates by +0.031, and both models sit near the PR-AUC floor, so this control is
-  suggestive rather than decisive. The pattern is consistent with the inflation being a
-  symptom of **temporal distribution shift** rather than of random splitting per se - and
-  Elliptic/Elliptic++ are exactly the shifting benchmarks where random-split evaluation
-  is dangerous.
+  aggregation, train-only scaling): over 3 seeds, PR-AUC 0.417 +/- 0.052 (temporal)
+  vs 0.965 +/- 0.002 (random), **+0.548 +/- 0.050**. On **DGraph-Fin**
+  (3.7M-node fintech graph with a *temporally stable* fraud rate) the PR-AUC
+  inflation vanishes (**+0.001 +/- 0.001** over 3 seeds) - though ROC-AUC still
+  inflates (+0.025 +/- 0.006), and both models sit near the PR-AUC floor, so this
+  control is supporting evidence rather than proof. On **IBM AMLworld HI-Small**
+  (5.08M synthetic transactions, 0.102% laundering, *moderate* generator drift)
+  the inflation is intermediate: **+0.124 +/- 0.007** (3 seeds), despite a
+  base-rate effect running *against* it. Across four datasets the inflation thus
+  tracks the drift magnitude - stable +0.001, moderate drift +0.124, regime change
+  +0.41 to +0.55 - exactly what the distribution-access mechanism predicts
+  ([`docs/results/leakage_amlworld.json`](docs/results/leakage_amlworld.json)).
 
 - **The post-time-step-43 collapse is the real open problem** and is unsolved by any
-  surveyed method under honest evaluation (our rolling backtest reproduces it). A
-  naive USAD-on-graph (GraphUSAD v1) fails the same way the plain autoencoder does -
-  ruling out the naive approach and pointing to explicit drift handling.
+  surveyed method under honest evaluation (our rolling backtest reproduces it). Four
+  drift-robust variants fail honestly: three GraphUSAD versions (naive, rolling,
+  domain-adversarial; ~0.04 PR-AUC, a first adaptation of USAD to graphs) and a
+  supervised DANN-GraphSAGE. The DANN case is a documented self-correction: a
+  single seed suggested it *hurt* (0.364); over 3 seeds it is indistinguishable
+  from plain GraphSAGE (0.462 +/- 0.090 vs 0.510 +/- 0.039). Time-invariant
+  representations do not solve the shift here, but they do not break anything
+  either - the negative is reported with its uncertainty.
 
 ## Demo: score a real subgraph
 
