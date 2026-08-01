@@ -809,9 +809,7 @@ def inductive_temporal(
     timesteps = node_timesteps(root)
     model_list = tuple(m.strip() for m in models.split(",") if m.strip())
     seed_list = tuple(int(s) for s in seeds.split(",") if s.strip())
-    console.print(
-        f"[bold]Temporal-protocol inductive ablation ({len(seed_list)} seeds)...[/bold]"
-    )
+    console.print(f"[bold]Temporal-protocol inductive ablation ({len(seed_list)} seeds)...[/bold]")
     res = run_inductive_temporal(data, timesteps, models=model_list, seeds=seed_list)
 
     table = Table(title=f"Temporal transductive vs inductive (PR-AUC, n={len(seed_list)})")
