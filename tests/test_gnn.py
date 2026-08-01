@@ -47,7 +47,7 @@ def test_temporal_val_masks_alignment_and_disjoint() -> None:
     assert int((sub_train | val).sum()) == int(data.train_mask.sum())
 
 
-@pytest.mark.parametrize("model_name", ["gcn", "sage", "gat"])
+@pytest.mark.parametrize("model_name", ["gcn", "sage", "gat", "transformer"])
 def test_train_gnn_smoke(model_name: str) -> None:
     data, ts = _synthetic()
     out = train_gnn(data, ts, model_name, epochs=5, patience=5, seed=0, val_start=30)
