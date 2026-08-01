@@ -58,9 +58,9 @@ $\sim$2\% illicit) and Elliptic++ \citep{elmougy2023elliptic} (adding 822{,}942
 wallet addresses) are the de facto benchmarks. A stream of recent papers reports
 illicit-detection scores approaching 0.98, for example accuracy 0.9802 and
 weighted F1 0.9799 under a stratified random split \citep{lin2026wavelet}, or
-random-split evaluations on Elliptic++ \citep{nguyen2025sagefin}. This suggests
-the problem is nearly solved. We argue this impression is false and traces to two
-evaluation choices: (i) random rather than temporal train/test splits, which give
+random-split evaluations on Elliptic++ \citep{nguyen2025sagefin}. Taken at face
+value, these numbers suggest the problem is nearly solved. We show that the
+impression traces to two evaluation choices: (i) random rather than temporal train/test splits, which give
 models access to the test period's distribution, and (ii) reporting weighted or
 overall F1, dominated by the $\sim$98\% licit class, rather than illicit-class
 metrics.
@@ -72,15 +72,22 @@ builds gain the most from the broken protocol. An evaluation regime that
 systematically favors a model family distorts the apparent state of the art and
 the direction of methods research.
 
-Our contributions are: (1) a systematic, multi-model, multi-seed quantification of
-the random-split inflation on Elliptic-family benchmarks; (2) a decomposition of
-that inflation into base-rate, graph-leakage, and distribution-access components,
-including the measured refutation of our own message-passing-leakage hypothesis;
-(3) a temporally stable cross-domain control consistent with the shift-driven
-mechanism; and (4) negative results, reported in full, for four drift-robust
-variants. These negatives indicate that the post-shift regime is the genuinely
-open problem, rather than an unexplored one. We release an evaluation harness in
-which every reported number is one seeded command.
+That temporal splits matter on drifting data is not new: TESSERACT
+\citep{pendlebury2019tesseract} established it for Android malware, and
+\citet{weber2019aml} set the temporal protocol on Elliptic itself. What is new
+here is the accounting. Our contributions are: (1) a systematic, multi-model,
+multi-seed quantification of the random-split inflation on Elliptic-family
+benchmarks; (2) a decomposition of that inflation into base-rate, graph-leakage,
+and distribution-access components, whose measured null adjudicates the
+currently contested graph-visibility hypothesis (Section 2) and refutes our own
+initial message-passing-leakage reading; (3) the finding that the broken
+protocol \emph{differentially} favors GNNs over trees (paired
+GraphSAGE$-$XGBoost inflation difference $+0.215$, 95\% CI $[0.158, 0.272]$),
+which distorts this community's methods research specifically; and (4)
+drift-graded cross-domain controls plus negative results, reported in full, for
+four drift-robust variants. These negatives indicate that the post-shift regime
+is unresolved by the methods we tested, rather than unexplored. We release an
+evaluation harness in which every reported number is one seeded command.
 
 \section{Related work}
 \paragraph{Evaluation integrity.} Leakage was formalized by \citet{kaufman2011leakage}
@@ -190,7 +197,15 @@ All experiments use one codebase, fixed seeds, and a CI-gated environment
 addresses and DGraph-Fin), illicit-class PR-AUC and F1 as primary metrics, a
 validation slice carved from the latest train steps, and decision thresholds
 chosen on validation only. Leakage comparisons hold the model, features, and
-trainer fixed and change only the split. Models: GCN \citep{kipf2017gcn},
+trainer fixed and change only the split (arm sizes are approximately, not
+exactly, matched: the temporal train arm holds 25.6k labeled nodes against
+$\sim$24k for the random arm, and validation slices are constructed per
+protocol). Both arms are transductive unless stated otherwise. On Elliptic this
+is provably benign for cross-period leakage: 0 of the 234{,}355 edges cross time
+steps, so message passing cannot reach another period regardless of the split;
+Section~\ref{sec:decompose} additionally measures the graph-visibility channel
+directly, and the Limitations discuss the two datasets where the graph does
+connect across the split. Models: GCN \citep{kipf2017gcn},
 GraphSAGE \citep{hamilton2017graphsage}, GAT \citep{velickovic2018gat}, a graph
 transformer (two TransformerConv layers, the UniMP operator
 \citep{shi2021unimp}, 4 heads), and XGBoost \citep{chen2016xgboost}. Unless stated otherwise, GNNs use two convolution
@@ -205,7 +220,10 @@ only.
 stated otherwise; we report mean $\pm$ sample standard deviation (ddof$=1$) and,
 for headline claims, 95\% $t$-confidence intervals and exact sign-flip permutation
 tests on the paired per-seed differences (the smallest attainable one-sided $p$ at
-$n{=}5$ is $1/32$). The ``leakage is null'' statement is an equivalence claim and
+$n{=}5$ is $1/32$, so sign-flip tests saturate and headline inference is CI-based;
+$t$-CIs assume approximate normality, unverifiable at this $n$; we apply no
+multiplicity correction, which is immaterial for the headline effects at 9--140
+seed standard deviations). The ``leakage is null'' statement is an equivalence claim and
 is therefore assessed with two-one-sided tests (TOST): we report the smallest
 round symmetric margin containing the 90\% CI; these margins are descriptive
 (post hoc), not pre-registered. Per-seed values for every cell are released with
@@ -217,8 +235,12 @@ such where quoted.
 
 \section{Results}
 \subsection{Baseline ordering under the temporal protocol}
-Under the temporal split, XGBoost (PR-AUC $0.791\pm0.002$; F1 0.82 at seed 42
-under the full-train protocol) leads GraphSAGE ($0.510\pm0.039$), the graph
+Under the temporal split, XGBoost leads: its canonical temporal baseline in this
+paper is PR-AUC $0.791\pm0.002$ / illicit-F1 $0.756\pm0.007$ (validation slice
+carved from the last train steps). A \emph{full-train} variant (all train steps
+1--34, no validation carve-out, single run at seed 42) scores PR-AUC 0.799 / F1
+0.817; we quote whichever protocol a comparison requires and label it. XGBoost
+leads GraphSAGE ($0.510\pm0.039$), the graph
 transformer ($0.487\pm0.038$), GAT ($0.297\pm0.061$) and GCN ($0.265\pm0.058$),
 reproducing \citet{weber2019aml}. Transformer-style dot-product attention does
 not close the temporal generalization gap: it lands within seed noise of
@@ -267,7 +289,7 @@ Figure~\ref{fig:leakage}). Under the random split, XGBoost reaches PR-AUC
 $0.986\pm0.001$ (F1 0.955 at seed 42), inside the literature's reported
 $\sim$0.90--0.98 band.
 
-\paragraph{The published recipe, replicated exactly.} Following the full published
+\paragraph{The published recipe, reproduced at the protocol level.} Following the full published
 recipe, a stratified random split combined with aggregate metrics, a generic
 XGBoost reproduces the headline numbers (5 seeds): accuracy
 $0.9917\pm0.0002$ and weighted F1 $0.9916\pm0.0002$, matching and slightly
@@ -322,13 +344,16 @@ at zero for all four GNNs; distribution access dominates everywhere.}
 The message-passing channel we ourselves hypothesized is \textbf{indistinguishable
 from zero for all four architectures}: training with test nodes entirely removed
 from the graph leaves random-split PR-AUC statistically unchanged. Because this is
-an equivalence claim, we assess it with TOST: the 90\% CIs bound the effect within
-$\pm 0.01$ for GraphSAGE ($[-0.008, +0.007]$), $\pm 0.02$ for the graph
-transformer ($[-0.010, +0.010]$), $\pm 0.03$ for GCN ($[-0.014, +0.020]$), and
-$\pm 0.05$ for GAT ($[-0.045, +0.025]$); the GAT bound is loose owing to its seed
-variance, so we can rule out a large leak but not a small one there. No architecture shows a positive leak. Distribution access is
+an equivalence claim, we report the 90\% CIs directly (bounds rounded outward):
+$[-0.008, +0.007]$ for GraphSAGE, $[-0.010, +0.011]$ for the graph transformer,
+$[-0.014, +0.021]$ for GCN, and $[-0.045, +0.025]$ for GAT. These margins are
+descriptive (post hoc), not pre-registered equivalence bounds. The GAT interval
+is loose owing to its seed variance, so we can rule out a large leak but not a
+small one there. No architecture shows a positive leak. Distribution access is
 computed as the residual (total gap minus the base-rate and message-passing
-components), so its uncertainty compounds theirs. The dominant term
+components); the residual telescopes per seed to the direct paired
+inductive-minus-temporal contrast, and the decomposition is additively
+consistent per seed by construction. The dominant term
 everywhere is distribution access: a random split trains the model on examples
 drawn from the test period, an advantage no deployed model can have. GNNs inflate
 more than XGBoost (paired GraphSAGE$-$XGBoost inflation difference $+0.215$, 95\%
@@ -350,35 +375,41 @@ labeled fraud prevalence collapses from 9.2\% to 2.5\%.
 
 \begin{table}[h]
 \centering
-\caption{Within-window inflation (GraphSAGE, PR-AUC, 5 seeds). The
-random-over-temporal ratio cancels each window's base rate.}
+\caption{Within-window results (GraphSAGE, 5 seeds). Because PR-AUC's no-skill
+floor is each window's prevalence (9.2\% pre, 2.5\% post), cross-window
+comparisons use prevalence-normalized AP, $(\mathrm{AP}-\pi)/(1-\pi)$, reported
+as ``skill''.}
 \label{tab:windowed}
+\resizebox{\textwidth}{!}{%
 \begin{tabular}{lcccc}
 \toprule
-Window & Temporal & Random & Inflation & Ratio \\
+Window & Temporal PR-AUC & Random PR-AUC & Temporal skill & Random skill \\
 \midrule
-Pre-shutdown (35--42) & $0.651\pm0.042$ & $0.895\pm0.018$ & $+0.244\pm0.059$ & $1.4\times$ \\
-Post-shutdown ($\geq$43) & $0.042\pm0.001$ & $0.348\pm0.033$ & $+0.306\pm0.034$ & $8.2\times$ \\
+Pre-shutdown (35--42) & $0.651\pm0.042$ & $0.895\pm0.018$ & 0.616 & 0.885 \\
+Post-shutdown ($\geq$43) & $0.042\pm0.001$ & $0.348\pm0.033$ & 0.018 & 0.331 \\
 \bottomrule
-\end{tabular}
+\end{tabular}}
 \end{table}
 
-The absolute difference is directional but not conclusive (paired
-$+0.062\pm0.058$, sign-flip $p=0.0625$, 4/5 seeds). On the relative scale the
-separation is clear: the within-window random-over-temporal ratio rises from
-$1.4\times$ pre-shutdown to $8.2\times$ post-shutdown, and the paired difference
-of per-seed log-ratios is $+1.78\pm0.10$ with all five seeds positive (sign-flip
-$p=1/32$). Post-shutdown, the temporal model is close to the no-skill floor
-(0.042 vs a 0.025 base rate) while the random-split model retains substantial
-skill (0.348). This skill can only have been acquired by training on the
-post-shutdown period itself. Two caveats: the post-shutdown ratio's denominator
-is near the floor, so the ratio's magnitude (though not its sign) is sensitive to
-small absolute changes; and the two windows differ in base rate (9.2\% vs 2.5\%),
-so cross-window comparisons of \emph{absolute} inflation are imperfect. The
-result is consistent with the mechanism's prediction in the relative sense; the
-weaker absolute test is reported alongside.
+Because the two windows have different base rates, raw PR-AUC is not directly
+comparable across them; we therefore analyze prevalence-normalized skill.
+Post-shutdown, the temporal model loses essentially all skill (0.616
+$\rightarrow$ 0.018, near the no-skill floor) while the random-split model
+retains substantial skill (0.885 $\rightarrow$ 0.331). That residual skill can
+only have been acquired by training on the post-shutdown period itself. The
+paired per-seed difference of normalized log-ratios,
+$\log(\mathrm{skill_{random}}/\mathrm{skill_{temporal}})$ post minus pre, is
+$+2.57\pm0.11$ with all five seeds positive (sign-flip $p=1/32$). On the raw
+scale the random-over-temporal ratio rises from $1.4\times$ to $8.2\times$; we
+note that part of this raw contrast reflects the prevalence difference rather
+than the mechanism, which is why the normalized statistic leads here. The
+absolute inflation difference is directional but not conclusive (paired
+$+0.062\pm0.058$, sign-flip $p=0.0625$, 4/5 seeds). Two caveats: the
+post-shutdown denominator is near the floor, so ratio magnitudes (though not
+their sign pattern) are sensitive to small absolute changes; and this windowed
+analysis covers one architecture (GraphSAGE), stated in Limitations.
 
-\subsection{Cross-domain controls: a dose-response pattern}
+\subsection{Cross-domain controls: a drift-ordered pattern}
 \label{sec:dose}
 Two additional datasets bracket the drift axis. On DGraph-Fin
 \citep{huang2022dgraph} (3.7M nodes, timestamped edges, temporally stable
@@ -397,16 +428,29 @@ stream), the inflation is intermediate: temporal PR-AUC $0.082\pm0.002$ versus
 random $0.206\pm0.006$ ($+0.124\pm0.007$). Notably the base-rate effect runs
 \emph{against} this inflation (the temporal test window has the \emph{higher}
 prevalence), so the $+0.124$ is distribution access net of an adverse base-rate
-term. Across four datasets the inflation thus tracks the drift magnitude: stable
-(DGraph) $+0.001$; moderate drift (AMLworld) $+0.124$; regime change (Elliptic
-family) $+0.41$ to $+0.55$. Three points across different domains and model
-classes are a consistent pattern rather than a fitted law, but the dose-response
-direction is exactly what the distribution-access mechanism predicts.
+term. Across four datasets the inflation is thus ordered by drift magnitude:
+stable (DGraph, GraphSAGE) $+0.001$; moderate drift (AMLworld, XGBoost) $+0.124$;
+regime change (Elliptic family, all model classes) $+0.41$ to $+0.55$. The
+cleanest like-for-like comparison holds the model class fixed: within XGBoost,
+moderate drift yields $+0.124$ against $+0.195$ under regime change. We state the
+confounds plainly: the model class varies across the endpoints, the stable
+anchor sits near the PR-AUC floor, and ratio-scale comparisons reorder some
+cells (AMLworld's random/temporal ratio exceeds Elliptic-XGBoost's, largely a
+ceiling artifact). Three drift levels across different domains are a consistent
+ordering rather than a fitted dose-response law, but the direction is exactly
+what the distribution-access mechanism predicts, and the within-dataset windowed
+analysis (Section~\ref{sec:windowed}) provides the confound-free version of the
+same test.
 
 \subsection{The unsolved post-shift regime and negative method results}
-Under the temporal protocol, a rolling per-window backtest of EvolveGCN-O
-\citep{pareja2020evolvegcn} collapses at the dark-market shutdown (steps 44--46:
-PR-AUC $\sim$0.01; Figure~\ref{fig:backtest}) and only partially recovers. A
+The post-shutdown performance collapse itself is documented since
+\citet{weber2019aml}, and \citet{pareja2020evolvegcn} already reported EvolveGCN
+degrading in that regime; what this section adds is the quantification of what
+the random split \emph{conceals} about that documented collapse, and a test of
+whether newer drift-robust training helps. Under the temporal protocol, a
+rolling per-window backtest of EvolveGCN-O \citep{pareja2020evolvegcn} collapses
+at the dark-market shutdown (steps 44--46: PR-AUC $\sim$0.01;
+Figure~\ref{fig:backtest}) and only partially recovers. A
 learning-rate $\times$ gradient-clipping sweep (six configurations, seed 42)
 improves the aggregate test PR-AUC from 0.100 to at best 0.200 (lr
 $5{\times}10^{-3}$, no clipping), still far below every temporal-protocol
@@ -417,22 +461,29 @@ baseline; the conclusion is unchanged.
 \includegraphics[width=0.75\linewidth]{figs/backtest.pdf}
 \caption{Rolling per-window test PR-AUC of EvolveGCN-O under the temporal
 protocol. Aggregate scores hide the collapse at the dark-market shutdown
-(steps 44--46).}
+(steps 44--46), a collapse documented since \citet{weber2019aml}.}
 \label{fig:backtest}
 \end{figure}
 
-Is the post-shift regime merely unexplored, or genuinely hard? We tested four
-drift-robust variants; none improves on the baselines. A USAD-style two-decoder
-adversarial graph autoencoder \citep{audibert2020usad} (naive, rolling-normal,
-and domain-adversarial variants) scores PR-AUC $0.0367\pm0.0001$
-over three seeds, a stable and decisive negative. A supervised domain-adversarial
-GraphSAGE \citep{ganin2015dann} scores $0.462\pm0.090$ over three seeds,
-statistically indistinguishable from the plain baseline ($0.510\pm0.039$): the
-time-invariance constraint yields no robustness gain. We note a second
-self-correction here: at a single seed (42, PR-AUC 0.364) DANN appeared clearly
-harmful; the multi-seed run shows that stronger conclusion was seed noise.
-Enforcing time-invariance does not solve this regime change; whether it actively
-hurts is within noise.
+Is the post-shift regime merely unexplored, or unresolved by the methods we
+tested? We evaluated four drift-robust variants; none improves on the baselines.
+A USAD-style two-decoder adversarial graph autoencoder \citep{audibert2020usad}
+scores PR-AUC $0.0367\pm0.0001$ over three seeds for the naive variant; the
+rolling-normal and domain-adversarial variants (single runs at seed 42) land on
+the same value. The diagnosis matters more than the score: the reconstruction
+score is \emph{systematically inverted} under shift (ROC-AUC $\approx$0.18,
+anti-predictive; the PR-AUC sits below the 6.5\% no-skill floor). Illicit
+test-period nodes reconstruct \emph{better} than licit ones, because the
+learned normality is the pre-shift licit distribution and the whole test period
+is out of distribution. Even sign-corrected, the score does not approach the
+supervised baselines. A supervised domain-adversarial GraphSAGE
+\citep{ganin2015dann} scores $0.462\pm0.090$ over three seeds against the plain
+baseline's $0.510\pm0.039$; the paired per-seed difference is $-0.03$ (95\% CI
+$[-0.23, +0.17]$), underpowered to bound the effect at $n{=}3$ but inconsistent
+with a large gain. We note a second self-correction here: at a single seed (42,
+PR-AUC 0.364) DANN appeared clearly harmful; the multi-seed run shows that
+stronger conclusion was seed noise. Enforcing time-invariance does not solve
+this regime change; whether it helps or hurts at all is within noise.
 
 \section{Discussion and recommendations}
 (1) On temporally shifting fraud graphs, report illicit-class metrics under a
@@ -453,13 +504,30 @@ rate), ROC-AUC does inflate there ($+0.025\pm0.006$ over seeds; up to $+0.055$ a
 width 128), and GADBench reports far stronger GNNs on this dataset; the control
 is therefore supporting evidence for the shift-driven mechanism, not proof. (3)
 Our temporal-protocol GNN F1 sits below some honest-protocol literature values
-($\sim$0.69 for GraphSAGE) even after tuning; the trees-over-GNNs magnitude we
-measure is therefore larger than the field's, though the ordering is consistent.
-(4) The trees-over-GNNs ordering is established here on Elliptic-family data
-only. (5) The GAT equivalence bound on message-passing leakage is loose
+($\sim$0.69 for GraphSAGE, from an unreplicated preprint; part of the gap is
+cross-metric) even after tuning; the consequence is that the per-architecture
+inflation magnitudes, and in particular the $+0.215$ GraphSAGE$-$XGBoost
+contrast, are recipe-conditional upper bounds: a stronger temporal-arm GNN
+recipe would shrink them, though honest validation-based selection did not find
+one, and the direction of every headline contrast is robust to any plausible
+improvement. (4) The trees-over-GNNs ordering is established here on
+Elliptic-family data only, and the windowed analysis covers one architecture
+(GraphSAGE). (5) The GAT equivalence bound on message-passing leakage is loose
 ($\pm 0.05$). (6) DGraph-Fin's temporal stability is measured coarsely (labeled
 fraud prevalence 1.2\% in the train window versus 1.4\% in the test window under
-our first-seen split), not characterized in depth. (7) Per concurrent work
+our first-seen split), not characterized in depth. Moreover, the temporal arms
+are transductive, and unlike Elliptic (0 cross-period edges), DGraph-Fin's graph
+does connect across the split (28.4\% of its 4.3M edges touch the test-period
+node set), as does Elliptic++'s address graph; on those datasets training-time
+visibility of test-period structure could bias the temporal arm upward, which
+runs \emph{toward} the paper's conclusion on the DGraph control (a smaller
+honest gap would only shrink the measured stability further) but is unmeasured.
+Elliptic++ address labels are additionally per-entity rather than time-scoped;
+the channel is symmetric across arms, so the inflation estimate stands, and its
+effect makes the temporal-arm 0.417 an upper bound on deployable performance.
+Our negative-methods coverage is also dated on the temporal side: EvolveGCN
+(2020) plus non-temporal drift heuristics; rolling retraining and
+continuous-time temporal graph methods remain untested here. (7) Per concurrent work
 \citep{safar2026opacity}, Elliptic's features embed construction-level look-ahead
 (address aggregates computed after the test period) and entity nonindependence;
 our ``honest'' protocol is honest at the \emph{split} level only. Both arms share
