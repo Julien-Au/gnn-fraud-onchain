@@ -254,6 +254,7 @@ Beyond the benchmark: a verified literature review
   | GCN | 0.265 +/- 0.058 | 0.818 +/- 0.010 | +0.553 +/- 0.062 |
   | GraphSAGE | 0.510 +/- 0.039 | 0.920 +/- 0.008 | +0.410 +/- 0.046 |
   | GAT | 0.297 +/- 0.061 | 0.775 +/- 0.036 | +0.478 +/- 0.041 |
+  | GraphTransformer | 0.487 +/- 0.038 | 0.902 +/- 0.007 | +0.415 +/- 0.039 |
   | XGBoost | 0.791 +/- 0.002 | **0.986 +/- 0.001** | +0.195 +/- 0.001 |
 
   Every inflation is significant at the smallest attainable exact permutation
@@ -275,8 +276,11 @@ Beyond the benchmark: a verified literature review
   (we hypothesized this graph-specific channel, measured it, and it is null), and
   **distribution access +0.384** - random splits train the model on the test
   period's distribution, an advantage no deployed model can have. The null holds
-  for **all three architectures** (TOST 90% CIs bound the effect within +/-0.01
-  for GraphSAGE, +/-0.03 for GCN, +/-0.05 for GAT). GNNs inflate more
+  for **all four architectures** (TOST 90% CIs bound the effect within +/-0.01
+  for GraphSAGE, +/-0.02 for the graph transformer, +/-0.03 for GCN, +/-0.05 for
+  GAT): transformer-style dot-product attention (TransformerConv/UniMP) shows the
+  same pattern (inflation +0.415, MP-leak +0.000 +/- 0.011, distribution access
+  +0.383). GNNs inflate more
   than XGBoost (paired GraphSAGE-XGBoost inflation difference +0.215, 95% CI
   [0.158, 0.272]) because they generalize worse across the temporal shift, not
   because of a graph leak (`gnn-fraud decompose`;

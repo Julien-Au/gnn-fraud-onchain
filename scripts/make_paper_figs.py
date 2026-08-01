@@ -33,21 +33,29 @@ plt.close(fig)
 
 # --- Figure 2: gap decomposition (bars = mean, dots = seeds) ---------------
 dc = json.loads((ROOT / "docs/results/decompose.json").read_text())
+tf_path = ROOT / "docs/results/decompose_transformer.json"
+if tf_path.exists():
+    dc.update(json.loads(tf_path.read_text()))
 comps = ["base_rate", "message_passing_leak", "distribution_access"]
 labels = {
     "base_rate": "base rate",
     "message_passing_leak": "MP leakage",
     "distribution_access": "distribution\naccess",
 }
-models = ["gcn", "sage", "gat", "xgboost"]
-colors = {"gcn": "#e76f51", "sage": "#4361ee", "gat": "#2a9d8f", "xgboost": "#7d5ba6"}
+models = ["gcn", "sage", "gat", "transformer", "xgboost"]
+colors = {
+    "gcn": "#e76f51",
+    "sage": "#4361ee",
+    "gat": "#2a9d8f",
+    "transformer": "#e9a820",
+    "xgboost": "#7d5ba6",
+}
+present = [m for m in models if m in dc]
 fig, ax = plt.subplots(figsize=(6.6, 3.2))
-width = 0.19
+width = 0.8 / max(len(present), 1)
 x = np.arange(len(comps))
-for i, m in enumerate(models):
-    if m not in dc:
-        continue
-    offs = (i - 1.5) * width
+for i, m in enumerate(present):
+    offs = (i - (len(present) - 1) / 2) * width
     for j, c in enumerate(comps):
         if c not in dc[m]["components"]:
             continue
@@ -60,7 +68,7 @@ ax.axhline(0, lw=0.8, color="black")
 ax.set_xticks(x)
 ax.set_xticklabels([labels[c] for c in comps])
 ax.set_ylabel("PR-AUC gap component")
-ax.legend(fontsize=8, ncol=4)
+ax.legend(fontsize=8, ncol=5)
 fig.tight_layout()
 fig.savefig(FIGS / "decompose.pdf")
 plt.close(fig)

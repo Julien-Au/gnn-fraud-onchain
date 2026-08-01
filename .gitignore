@@ -52,3 +52,10 @@ paper/tmlr/*.blg
 paper/tmlr/*.log
 paper/tmlr/*.out
 paper/tmlr/main.pdf
+paper/log/main.aux
+paper/log/main.bbl
+paper/log/main.blg
+paper/log/main.brf
+paper/log/main.log
+paper/log/main.out
+paper/log/template/

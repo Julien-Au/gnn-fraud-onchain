@@ -52,6 +52,9 @@ def agg(v: list[float]) -> dict:
 
 out: dict = {"note": "sample std (ddof=1); t critical values at df=n-1"}
 lm = json.loads((R / "leakage_multi.json").read_text())
+tf_lm = R / "leakage_transformer.json"
+if tf_lm.exists():
+    lm["transformer"] = json.loads(tf_lm.read_text())["transformer"]
 out["leakage_multi"] = {}
 for m, r in lm.items():
     pr = r["pr_auc"]
@@ -62,6 +65,9 @@ for m, r in lm.items():
         "inflation": {**agg(inf), "p_sign_flip_gt0": p_sign(inf)},
     }
 dc = json.loads((R / "decompose.json").read_text())
+tf_dc = R / "decompose_transformer.json"
+if tf_dc.exists():
+    dc.update(json.loads(tf_dc.read_text()))
 out["decompose"] = {
     m: {k: agg(c["per_seed"]) for k, c in r["components"].items()} for m, r in dc.items()
 }
