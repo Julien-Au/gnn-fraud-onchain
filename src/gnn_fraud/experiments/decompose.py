@@ -208,3 +208,48 @@ def run_decompose(
     components["total_gap"] = _mean_std(total)
     out["components"] = components
     return out
+
+
+def run_inductive_temporal(
+    data: Data,
+    timesteps: NDArray[Any],
+    models: tuple[str, ...] = ("gcn", "sage", "gat", "transformer"),
+    seeds: tuple[int, ...] = (42, 43, 44, 45, 46),
+    val_start: int = 30,
+) -> dict[str, Any]:
+    """Measure graph-visibility under the TEMPORAL protocol (paired, per seed).
+
+    Under a temporal split, test-period nodes are the model's only access to the
+    shifted test distribution, so the transductive-vs-inductive contrast measures
+    whether graph visibility of the (unlabeled) test period carries usable
+    distributional information - the reading suggested by the random-split null
+    versus the large transductive-vs-inductive gap reported by concurrent work.
+
+    - **transductive**: the temporal arm as in the main experiments (full graph
+      during training; loss on labeled train nodes only).
+    - **inductive**: all test-period nodes removed from the graph during training
+      (same as Arm I, but with temporal masks); full-graph inference at test time.
+
+    ``visibility_effect`` = transductive - inductive, per seed.
+    """
+    ts = torch.as_tensor(np.asarray(timesteps))
+    t_train = data.train_mask & (ts < val_start)
+    t_val = data.train_mask & (ts >= val_start)
+    t_test = data.test_mask
+
+    out: dict[str, Any] = {"seeds": list(seeds), "models": {}}
+    for model_name in models:
+        trans: list[float] = []
+        induc: list[float] = []
+        for seed in seeds:
+            trans.append(
+                _fit_with_masks(data, model_name, t_train, t_val, t_test, seed=seed)[0].pr_auc
+            )
+            induc.append(_fit_inductive(data, model_name, t_train, t_val, t_test, seed=seed))
+        effect = [t - i for t, i in zip(trans, induc, strict=True)]
+        out["models"][model_name] = {
+            "transductive": _mean_std(trans),
+            "inductive": _mean_std(induc),
+            "visibility_effect": _mean_std(effect),
+        }
+    return out

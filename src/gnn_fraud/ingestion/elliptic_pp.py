@@ -8,9 +8,10 @@ transactions, giving a genuinely heterogeneous graph:
 
 Design choices (documented in data/DATA_CARD.md):
 
-- The **target is transaction classification** (illicit vs licit), so the temporal
-  split stays clean: each transaction has a single time step, whereas an address
-  spans several. Addresses are context nodes (features only, no supervision here).
+- The **target is selectable** (``tx`` or ``addr``): transaction classification
+  keeps the cleanest temporal split (each transaction has a single time step),
+  while address classification supervises the ``addr`` nodes (split by first-seen
+  time step, labels are per-entity). The non-target type serves as context.
 - Wallet features are given per address-*time step* (1.27M rows) but the edge lists
   reference addresses by string only, so a node is a **unique address**; we
   aggregate its features by mean over time steps.

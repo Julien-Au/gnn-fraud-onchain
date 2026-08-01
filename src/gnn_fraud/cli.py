@@ -791,6 +791,48 @@ def decompose(
 
 
 @app.command()
+def inductive_temporal(
+    root: str = "data/raw/elliptic",
+    models: str = "gcn,sage,gat,transformer",
+    seeds: str = "42,43,44,45,46",
+    results_path: str = "docs/results/inductive_temporal.json",
+) -> None:
+    """Transductive vs inductive under the TEMPORAL protocol: does graph visibility
+    of the (unlabeled) test period carry usable information? Requires ``gnn``."""
+    import json
+    from pathlib import Path
+
+    from gnn_fraud.experiments.decompose import run_inductive_temporal
+    from gnn_fraud.ingestion.elliptic import load_elliptic, node_timesteps
+
+    data = load_elliptic(root)
+    timesteps = node_timesteps(root)
+    model_list = tuple(m.strip() for m in models.split(",") if m.strip())
+    seed_list = tuple(int(s) for s in seeds.split(",") if s.strip())
+    console.print(
+        f"[bold]Temporal-protocol inductive ablation ({len(seed_list)} seeds)...[/bold]"
+    )
+    res = run_inductive_temporal(data, timesteps, models=model_list, seeds=seed_list)
+
+    table = Table(title=f"Temporal transductive vs inductive (PR-AUC, n={len(seed_list)})")
+    for col in ("model", "transductive", "inductive", "visibility effect"):
+        table.add_column(col, justify="right" if col != "model" else "left")
+    for m, r in res["models"].items():
+        table.add_row(
+            m,
+            f"{r['transductive']['mean']:.4f} +/- {r['transductive']['std']:.4f}",
+            f"{r['inductive']['mean']:.4f} +/- {r['inductive']['std']:.4f}",
+            f"{r['visibility_effect']['mean']:+.4f} +/- {r['visibility_effect']['std']:.4f}",
+        )
+    console.print(table)
+
+    out_path = Path(results_path)
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    out_path.write_text(json.dumps(res, indent=2) + "\n", encoding="utf-8")
+    console.print(f"Saved to {out_path}")
+
+
+@app.command()
 def tune_gnn(
     root: str = "data/raw/elliptic",
     models: str = "sage,gcn",

@@ -7,12 +7,10 @@ A portfolio-grade, fully open and reproducible study: from non-graph baselines
 to GNNs (GCN, GraphSAGE, GAT), a temporal variant, and a **heterogeneous /
 relational** formulation aimed at the "one model across many schemas" question.
 
-> Status: **complete; paper under review.** The study grew into a manuscript,
-> *"How Much of the Elliptic Leaderboard Is Real? Decomposing Evaluation
-> Inflation into Leakage, Shift, and Base-Rate Effects on Temporal Transaction
-> Graphs"*, submitted to TMLR in July 2026 (source in
-> [`paper/tmlr/`](paper/tmlr/)). Every number in the paper regenerates from this
-> repo with a single seeded command. No result is reported until it is real and
+> Status: **complete; manuscript in submission.** The study grew into a research
+> manuscript currently in double-blind peer review (source in
+> [`paper/`](paper/)). Every number in the paper regenerates from this repo with
+> a single seeded command. No result is reported until it is real and
 > reproduced. See [`docs/loops/`](docs/loops/) for how this repo maintains itself.
 
 ## Why this project
@@ -238,7 +236,7 @@ uv run gnn-fraud info
 Beyond the benchmark: a verified literature review
 ([`docs/sota-review.md`](docs/sota-review.md)), an experiment log
 ([`docs/research-log.md`](docs/research-log.md)), and the resulting manuscript
-([`paper/tmlr/main.tex`](paper/tmlr/main.tex), under review at TMLR):
+([`paper/log/main.tex`](paper/log/main.tex), in double-blind review):
 
 - **Our honest results match the field's honest SOTA.** Under a strict temporal split
   and illicit-class F1 - the only comparable setting - tree ensembles (~0.80) beat
