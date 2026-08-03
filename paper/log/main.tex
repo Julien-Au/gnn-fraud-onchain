@@ -38,7 +38,9 @@ reported headline numbers with a generic XGBoost (accuracy 0.992, weighted F1
 random test set isolates a small base-rate component. Second, an inductive
 ablation, which removes all test nodes from the graph during training, shows that
 the message-passing leakage we initially hypothesized is indistinguishable from
-zero for all four GNN architectures tested, including a graph transformer. The dominant component is
+zero for all four GNN architectures tested, including a graph transformer;
+repeated under the temporal protocol, the same ablation has exactly zero effect,
+because Elliptic's disconnected time steps preclude cross-period message passing. The dominant component is
 \emph{distribution access}: a random split trains the model on the test period's
 distribution, and the models that generalize worst across temporal shift gain the
 most. Consistent with this mechanism, the inflation tracks the drift
@@ -132,9 +134,11 @@ already spans all periods, test-node features are redundant, and removing them
 changes nothing ($-0.000\pm0.008$). On this reading the graph channel is not a
 separate leak: it matters precisely insofar as it transports
 otherwise-unavailable distributional information. In other words, a single
-mechanism expresses itself under two protocols. A direct test (our inductive
-ablation run under the temporal protocol) would adjudicate this reading and is
-left to future work.
+mechanism expresses itself under two protocols. We test this reading directly in
+Section~\ref{sec:decompose}: run under the temporal protocol, our inductive
+ablation has exactly zero effect on Elliptic, which localizes the reported
+transductive-versus-inductive gap in protocol details other than training-time
+message passing across the split.
 
 \paragraph{Concurrent work: construction-level leakage.} While this study was
 underway, \citet{safar2026opacity} published a forensic deconstruction of the
@@ -359,12 +363,25 @@ drawn from the test period, an advantage no deployed model can have. GNNs inflat
 more than XGBoost (paired GraphSAGE$-$XGBoost inflation difference $+0.215$, 95\%
 CI $[0.158, 0.272]$, $p=1/32$) because their temporal generalization is weaker,
 not because of a graph-specific leak. We report this as an explicit
-self-correction. This null is also consistent with the large
-transductive-versus-inductive gap reported by \citet{maganti2026liability} under
-temporal evaluation (Section 2), on the candidate reading that graph visibility
-inflates results only when it is the sole conduit of test-period distributional
-information; when distribution access is already granted by the split, the graph
-channel adds nothing measurable.
+self-correction.
+
+\paragraph{The same ablation under the temporal protocol.} The random-split null
+leaves open whether graph visibility matters under the \emph{temporal} protocol,
+where test-period nodes are the model's only access to the shifted distribution;
+concurrent work \citep{maganti2026liability} reports a large ($\sim$39.5 F1
+point) transductive-versus-inductive gap there. We ran the identical ablation
+under temporal masks (5 seeds, all four architectures): for GCN, GraphSAGE, and
+the graph transformer the effect is \emph{exactly zero on every seed}, and for
+GAT it is noise ($+0.021\pm0.055$, 95\% CI $[-0.047, +0.090]$). The exact zeros
+are structural rather than statistical: Elliptic's time steps are disconnected
+components and its nodes are time-ordered, so deleting the test-period suffix
+leaves the training computation identical draw for draw (GAT differs only
+through the order of its attention-dropout draws). Under Elliptic's standard
+temporal split, training-time graph visibility of the test period carries no
+information at all. The reported transductive-versus-inductive gap must
+therefore trace to protocol details other than cross-split message passing,
+such as inference-time feature visibility or a graph construction that connects
+periods; this localization is the adjudication the concurrent debate needed.
 
 \subsection{The mechanism's falsifiable prediction: inflation concentrates in the
 shifted window}

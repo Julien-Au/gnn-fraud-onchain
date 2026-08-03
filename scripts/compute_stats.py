@@ -71,6 +71,12 @@ if tf_dc.exists():
 out["decompose"] = {
     m: {k: agg(c["per_seed"]) for k, c in r["components"].items()} for m, r in dc.items()
 }
+it_path = R / "inductive_temporal.json"
+if it_path.exists():
+    it = json.loads(it_path.read_text())
+    out["inductive_temporal"] = {
+        m: {k: agg(v["per_seed"]) for k, v in r.items()} for m, r in it["models"].items()
+    }
 sage_inf = lm["sage"]["pr_auc"]["inflation"]["per_seed"]
 xgb_inf = lm["xgboost"]["pr_auc"]["inflation"]["per_seed"]
 d = [a - b for a, b in zip(sage_inf, xgb_inf)]
