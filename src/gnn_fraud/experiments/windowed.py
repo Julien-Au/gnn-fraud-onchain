@@ -22,6 +22,32 @@ from gnn_fraud.eval.metrics import evaluate_binary
 from gnn_fraud.experiments.leakage import _fit_with_masks, random_masks
 
 
+def _xgb_full_probs(data: Data, train_mask: torch.Tensor, seed: int) -> torch.Tensor:
+    """Fit the standard XGBoost recipe on the masked train arm; return
+    illicit-class probabilities for every node (windowed evaluation slices them)."""
+    from sklearn.preprocessing import StandardScaler
+    from xgboost import XGBClassifier
+
+    x = data.x.cpu().numpy()
+    y = data.y.cpu().numpy()
+    tr = train_mask.cpu().numpy()
+    scaler = StandardScaler().fit(x[tr])
+    pos, neg = int((y[tr] == 1).sum()), int((y[tr] == 0).sum())
+    xgb = XGBClassifier(
+        n_estimators=300,
+        max_depth=6,
+        learning_rate=0.1,
+        subsample=0.9,
+        colsample_bytree=0.9,
+        scale_pos_weight=(neg / pos) if pos else 1.0,
+        eval_metric="aucpr",
+        random_state=seed,
+        n_jobs=4,
+    )
+    xgb.fit(scaler.transform(x[tr]), y[tr])
+    return torch.from_numpy(xgb.predict_proba(scaler.transform(x))[:, 1])
+
+
 def run_windowed_leakage(
     data: Data,
     timesteps: NDArray[Any],
@@ -48,11 +74,15 @@ def run_windowed_leakage(
 
     for seed in seeds:
         r_train, r_val, r_test = random_masks(y, seed=seed)
-        probs_t: list[torch.Tensor] = []
-        probs_r: list[torch.Tensor] = []
-        _fit_with_masks(data, model_name, t_train, t_val, t_test, seed=seed, out_probs=probs_t)
-        _fit_with_masks(data, model_name, r_train, r_val, r_test, seed=seed, out_probs=probs_r)
-        p_t, p_r = probs_t[0], probs_r[0]
+        if model_name == "xgboost":
+            p_t = _xgb_full_probs(data, t_train, seed=seed)
+            p_r = _xgb_full_probs(data, r_train, seed=seed)
+        else:
+            probs_t: list[torch.Tensor] = []
+            probs_r: list[torch.Tensor] = []
+            _fit_with_masks(data, model_name, t_train, t_val, t_test, seed=seed, out_probs=probs_t)
+            _fit_with_masks(data, model_name, r_train, r_val, r_test, seed=seed, out_probs=probs_r)
+            p_t, p_r = probs_t[0], probs_r[0]
         for w, w_mask in windows.items():
             # temporal arm: all labeled nodes of the window; random arm: the window's
             # nodes that fell into the random test set (unseen by that model).

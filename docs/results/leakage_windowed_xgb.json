@@ -1,0 +1,89 @@
+{
+  "model": "xgboost",
+  "seeds": [
+    42,
+    43,
+    44,
+    45,
+    46
+  ],
+  "prevalence": {
+    "pre_shutdown": 0.0916,
+    "post_shutdown": 0.0253
+  },
+  "pre_shutdown": {
+    "temporal": {
+      "mean": 0.915,
+      "sstd": 0.0006,
+      "per_seed": [
+        0.9154,
+        0.9146,
+        0.9158,
+        0.9147,
+        0.9145
+      ]
+    },
+    "random": {
+      "mean": 0.9702,
+      "sstd": 0.0065,
+      "per_seed": [
+        0.9787,
+        0.9702,
+        0.9745,
+        0.9641,
+        0.9637
+      ]
+    },
+    "inflation": {
+      "mean": 0.0553,
+      "sstd": 0.0061,
+      "per_seed": [
+        0.0633,
+        0.0556,
+        0.0588,
+        0.0495,
+        0.0492
+      ]
+    }
+  },
+  "post_shutdown": {
+    "temporal": {
+      "mean": 0.0354,
+      "sstd": 0.0021,
+      "per_seed": [
+        0.0334,
+        0.0343,
+        0.0381,
+        0.0372,
+        0.0343
+      ]
+    },
+    "random": {
+      "mean": 0.8724,
+      "sstd": 0.0227,
+      "per_seed": [
+        0.8931,
+        0.8671,
+        0.8366,
+        0.8748,
+        0.8903
+      ]
+    },
+    "inflation": {
+      "mean": 0.8369,
+      "sstd": 0.0244,
+      "per_seed": [
+        0.8597,
+        0.8328,
+        0.7985,
+        0.8376,
+        0.856
+      ]
+    }
+  },
+  "prediction": {
+    "pre_inflation": 0.0553,
+    "post_inflation": 0.8369,
+    "post_greater_than_pre": true
+  }
+}

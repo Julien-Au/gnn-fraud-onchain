@@ -81,6 +81,39 @@ sage_inf = lm["sage"]["pr_auc"]["inflation"]["per_seed"]
 xgb_inf = lm["xgboost"]["pr_auc"]["inflation"]["per_seed"]
 d = [a - b for a, b in zip(sage_inf, xgb_inf)]
 out["sage_minus_xgb_inflation"] = {**agg(d), "p_sign_flip_gt0": p_sign(d)}
+
+# Windowed analyses: raw arms + prevalence-normalized log-ratio test per model.
+out["windowed"] = {}
+for name, path in [("sage", "leakage_windowed.json"), ("xgboost", "leakage_windowed_xgb.json")]:
+    wp = R / path
+    if not wp.exists():
+        continue
+    w = json.loads(wp.read_text())
+    block: dict = {"prevalence": w["prevalence"]}
+    for win in ("pre_shutdown", "post_shutdown"):
+        block[win] = {k: agg(w[win][k]["per_seed"]) for k in ("temporal", "random", "inflation")}
+    norm = {
+        (win, arm): [
+            (v - w["prevalence"][win]) / (1 - w["prevalence"][win])
+            for v in w[win][arm]["per_seed"]
+        ]
+        for win in ("pre_shutdown", "post_shutdown")
+        for arm in ("temporal", "random")
+    }
+    lr = [
+        math.log(norm[("post_shutdown", "random")][i] / norm[("post_shutdown", "temporal")][i])
+        - math.log(norm[("pre_shutdown", "random")][i] / norm[("pre_shutdown", "temporal")][i])
+        for i in range(len(w["seeds"]))
+    ]
+    block["normalized_logratio_post_minus_pre"] = {**agg(lr), "p_sign_flip_gt0": p_sign(lr)}
+    abs_d = [
+        b - a
+        for a, b in zip(
+            w["pre_shutdown"]["inflation"]["per_seed"], w["post_shutdown"]["inflation"]["per_seed"]
+        )
+    ]
+    block["absolute_inflation_post_minus_pre"] = {**agg(abs_d), "p_sign_flip_gt0": p_sign(abs_d)}
+    out["windowed"][name] = block
 het = []
 for f in ("leakage_hetero_pre_split.json", "leakage_hetero_s43_pre_split.json",
           "leakage_hetero_s44_pre_split.json"):

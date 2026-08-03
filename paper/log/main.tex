@@ -392,18 +392,20 @@ labeled fraud prevalence collapses from 9.2\% to 2.5\%.
 
 \begin{table}[h]
 \centering
-\caption{Within-window results (GraphSAGE, 5 seeds). Because PR-AUC's no-skill
-floor is each window's prevalence (9.2\% pre, 2.5\% post), cross-window
-comparisons use prevalence-normalized AP, $(\mathrm{AP}-\pi)/(1-\pi)$, reported
-as ``skill''.}
+\caption{Within-window results (5 seeds). Because PR-AUC's no-skill floor is
+each window's prevalence (9.2\% pre, 2.5\% post), cross-window comparisons use
+prevalence-normalized AP, $(\mathrm{AP}-\pi)/(1-\pi)$, reported as ``skill''.}
 \label{tab:windowed}
 \resizebox{\textwidth}{!}{%
-\begin{tabular}{lcccc}
+\begin{tabular}{llcccc}
 \toprule
-Window & Temporal PR-AUC & Random PR-AUC & Temporal skill & Random skill \\
+Model & Window & Temporal PR-AUC & Random PR-AUC & Temporal skill & Random skill \\
 \midrule
-Pre-shutdown (35-42) & $0.651\pm0.042$ & $0.895\pm0.018$ & 0.616 & 0.885 \\
-Post-shutdown ($\geq$43) & $0.042\pm0.001$ & $0.348\pm0.033$ & 0.018 & 0.331 \\
+\multirow{2}{*}{GraphSAGE} & Pre-shutdown (35-42) & $0.651\pm0.042$ & $0.895\pm0.018$ & 0.616 & 0.885 \\
+ & Post-shutdown ($\geq$43) & $0.042\pm0.001$ & $0.348\pm0.033$ & 0.018 & 0.331 \\
+\midrule
+\multirow{2}{*}{XGBoost} & Pre-shutdown (35-42) & $0.915\pm0.001$ & $0.970\pm0.007$ & 0.906 & 0.967 \\
+ & Post-shutdown ($\geq$43) & $0.035\pm0.002$ & $0.872\pm0.023$ & 0.010 & 0.869 \\
 \bottomrule
 \end{tabular}}
 \end{table}
@@ -416,15 +418,21 @@ retains substantial skill (0.885 $\rightarrow$ 0.331). That residual skill can
 only have been acquired by training on the post-shutdown period itself. The
 paired per-seed difference of normalized log-ratios,
 $\log(\mathrm{skill_{random}}/\mathrm{skill_{temporal}})$ post minus pre, is
-$+2.57\pm0.11$ with all five seeds positive (sign-flip $p=1/32$). On the raw
-scale the random-over-temporal ratio rises from $1.4\times$ to $8.2\times$; we
-note that part of this raw contrast reflects the prevalence difference rather
-than the mechanism, which is why the normalized statistic leads here. The
-absolute inflation difference is directional but not conclusive (paired
-$+0.062\pm0.058$, sign-flip $p=0.0625$, 4/5 seeds). Two caveats: the
-post-shutdown denominator is near the floor, so ratio magnitudes (though not
-their sign pattern) are sensitive to small absolute changes; and this windowed
-analysis covers one architecture (GraphSAGE), stated in Limitations.
+$+2.57\pm0.11$ for GraphSAGE with all five seeds positive (sign-flip $p=1/32$).
+The pattern is not architecture-specific: for XGBoost, the strongest honest
+model, post-shutdown temporal skill collapses to 0.010 while the random-split
+model retains 0.869 (inflation $+0.837\pm0.024$; paired normalized log-ratio
+$+4.37\pm0.22$, all five seeds positive, $p=1/32$). The best model under the
+honest protocol has essentially no post-shift skill, and the random split
+manufactures nearly all of it. On the raw scale the GraphSAGE
+random-over-temporal ratio rises from $1.4\times$ to $8.2\times$; we note that
+part of this raw contrast reflects the prevalence difference rather than the
+mechanism, which is why the normalized statistic leads here. The absolute
+inflation difference for GraphSAGE is directional but not conclusive (paired
+$+0.062\pm0.058$, sign-flip $p=0.0625$, 4/5 seeds); for XGBoost it is decisive
+($+0.782\pm0.026$, all seeds, $p=1/32$). One caveat: the post-shutdown
+denominators are near the floor, so ratio magnitudes (though not their sign
+pattern) are sensitive to small absolute changes.
 
 \subsection{Cross-domain controls: a drift-ordered pattern}
 \label{sec:dose}
@@ -528,8 +536,7 @@ contrast, are recipe-conditional upper bounds: a stronger temporal-arm GNN
 recipe would shrink them, though honest validation-based selection did not find
 one, and the direction of every headline contrast is robust to any plausible
 improvement. (4) The trees-over-GNNs ordering is established here on
-Elliptic-family data only, and the windowed analysis covers one architecture
-(GraphSAGE). (5) The GAT equivalence bound on message-passing leakage is loose
+Elliptic-family data only. (5) The GAT equivalence bound on message-passing leakage is loose
 ($\pm 0.05$). (6) DGraph-Fin's temporal stability is measured coarsely (labeled
 fraud prevalence 1.2\% in the train window versus 1.4\% in the test window under
 our first-seen split), not characterized in depth. Moreover, the temporal arms
