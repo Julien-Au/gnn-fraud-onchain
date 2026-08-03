@@ -220,13 +220,13 @@ uses 300 trees of depth 6 with \texttt{scale\_pos\_weight} set from the train
 class ratio. Features are standardized with a scaler fit on the training arm
 only.
 
-\paragraph{Statistics.} Multi-seed results use five paired seeds (42--46) unless
+\paragraph{Statistics.} Multi-seed results use five paired seeds (42-46) unless
 stated otherwise; we report mean $\pm$ sample standard deviation (ddof$=1$) and,
 for headline claims, 95\% $t$-confidence intervals and exact sign-flip permutation
 tests on the paired per-seed differences (the smallest attainable one-sided $p$ at
 $n{=}5$ is $1/32$, so sign-flip tests saturate and headline inference is CI-based;
 $t$-CIs assume approximate normality, unverifiable at this $n$; we apply no
-multiplicity correction, which is immaterial for the headline effects at 9--140
+multiplicity correction, which is immaterial for the headline effects at 9-140
 seed standard deviations). The ``leakage is null'' statement is an equivalence claim and
 is therefore assessed with two-one-sided tests (TOST): we report the smallest
 round symmetric margin containing the 90\% CI; these margins are descriptive
@@ -242,7 +242,7 @@ such where quoted.
 Under the temporal split, XGBoost leads: its canonical temporal baseline in this
 paper is PR-AUC $0.791\pm0.002$ / illicit-F1 $0.756\pm0.007$ (validation slice
 carved from the last train steps). A \emph{full-train} variant (all train steps
-1--34, no validation carve-out, single run at seed 42) scores PR-AUC 0.799 / F1
+1-34, no validation carve-out, single run at seed 42) scores PR-AUC 0.799 / F1
 0.817; we quote whichever protocol a comparison requires and label it. XGBoost
 leads GraphSAGE ($0.510\pm0.039$), the graph
 transformer ($0.487\pm0.038$), GAT ($0.297\pm0.061$) and GCN ($0.265\pm0.058$),
@@ -291,7 +291,7 @@ Every inflation is significant at the smallest attainable exact permutation leve
 ($p=1/32$), with 95\% CIs bounded away from zero (e.g.\ GraphSAGE $[0.353,0.467]$;
 Figure~\ref{fig:leakage}). Under the random split, XGBoost reaches PR-AUC
 $0.986\pm0.001$ (F1 0.955 at seed 42), inside the literature's reported
-$\sim$0.90--0.98 band.
+$\sim$0.90-0.98 band.
 
 \paragraph{The published recipe, reproduced at the protocol level.} Following the full published
 recipe, a stratified random split combined with aggregate metrics, a generic
@@ -402,7 +402,7 @@ as ``skill''.}
 \toprule
 Window & Temporal PR-AUC & Random PR-AUC & Temporal skill & Random skill \\
 \midrule
-Pre-shutdown (35--42) & $0.651\pm0.042$ & $0.895\pm0.018$ & 0.616 & 0.885 \\
+Pre-shutdown (35-42) & $0.651\pm0.042$ & $0.895\pm0.018$ & 0.616 & 0.885 \\
 Post-shutdown ($\geq$43) & $0.042\pm0.001$ & $0.348\pm0.033$ & 0.018 & 0.331 \\
 \bottomrule
 \end{tabular}}
@@ -466,7 +466,7 @@ degrading in that regime; what this section adds is the quantification of what
 the random split \emph{conceals} about that documented collapse, and a test of
 whether newer drift-robust training helps. Under the temporal protocol, a
 rolling per-window backtest of EvolveGCN-O \citep{pareja2020evolvegcn} collapses
-at the dark-market shutdown (steps 44--46: PR-AUC $\sim$0.01;
+at the dark-market shutdown (steps 44-46: PR-AUC $\sim$0.01;
 Figure~\ref{fig:backtest}) and only partially recovers. A
 learning-rate $\times$ gradient-clipping sweep (six configurations, seed 42)
 improves the aggregate test PR-AUC from 0.100 to at best 0.200 (lr
@@ -478,7 +478,7 @@ baseline; the conclusion is unchanged.
 \includegraphics[width=0.75\linewidth]{figs/backtest.pdf}
 \caption{Rolling per-window test PR-AUC of EvolveGCN-O under the temporal
 protocol. Aggregate scores hide the collapse at the dark-market shutdown
-(steps 44--46), a collapse documented since \citet{weber2019aml}.}
+(steps 44-46), a collapse documented since \citet{weber2019aml}.}
 \label{fig:backtest}
 \end{figure}
 
@@ -516,7 +516,7 @@ double-leak hypothesis did not survive its ablation.
 (1) The tuning sweeps and the EvolveGCN sweep are single runs at seed 42; the
 headline inflation, decomposition, DGraph control, and negative-method results are
 multi-seed (3-5 seeds). (2) The DGraph-Fin control operates near the
-PR-AUC floor for the models we trained (PR-AUC 0.036--0.040 against a 1.3\% base
+PR-AUC floor for the models we trained (PR-AUC 0.036-0.040 against a 1.3\% base
 rate), ROC-AUC does inflate there ($+0.025\pm0.006$ over seeds; up to $+0.055$ at
 width 128), and GADBench reports far stronger GNNs on this dataset; the control
 is therefore supporting evidence for the shift-driven mechanism, not proof. (3)
@@ -584,7 +584,7 @@ per-seed detail for every other cell in the paper.
 
 \begin{table}[h]
 \centering
-\caption{Per-seed illicit-class PR-AUC (seeds 42--46).}
+\caption{Per-seed illicit-class PR-AUC (seeds 42-46).}
 \label{tab:perseed}
 \small
 \begin{tabular}{llccccc}
